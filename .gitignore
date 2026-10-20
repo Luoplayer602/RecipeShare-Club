@@ -1,0 +1,7 @@
+.tasks/
+.env
+.env.*
+!.env.example
+.secrets/
+backups/
+demo-ui/

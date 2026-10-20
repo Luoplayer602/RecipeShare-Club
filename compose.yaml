@@ -1,0 +1,92 @@
+name: ${COMPOSE_PROJECT_NAME:-recipeshare-club}
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  nginx:
+    image: nginxinc/nginx-unprivileged:1.28.0-alpine
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8080}:8080"
+    volumes:
+      - ./infra/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./infra/nginx/html:/usr/share/nginx/html:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks: [edge]
+    healthcheck:
+      test: [CMD-SHELL, "wget -q -O /dev/null http://127.0.0.1:8080/health/live || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    logging: *logging
+
+  mysql:
+    image: mysql:8.4.11
+    ports:
+      - "127.0.0.1:3307:3306"
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-recipeshare}
+      MYSQL_USER: ${MYSQL_USER:-recipe_owner}
+      MYSQL_PASSWORD_FILE: /run/secrets/mysql_owner_password
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password
+    secrets:
+      - mysql_owner_password
+      - mysql_root_password
+    command: [--character-set-server=utf8mb4, --collation-server=utf8mb4_0900_ai_ci]
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks: [data, admin]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          MYSQL_PWD="$$(cat /run/secrets/mysql_owner_password)"
+          mysql --protocol=TCP --host=127.0.0.1 --user="$$MYSQL_USER"
+          --database="$$MYSQL_DATABASE" --execute='SELECT 1' > /dev/null
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+      retries: 10
+    logging: *logging
+
+  phpmyadmin:
+    image: phpmyadmin:5.2.3-apache
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_ARBITRARY: "0"
+      UPLOAD_LIMIT: 16M
+    ports:
+      - "127.0.0.1:${PHPMYADMIN_PORT:-8081}:80"
+    networks: [data, admin]
+    security_opt: [no-new-privileges:true]
+    logging: *logging
+
+networks:
+  edge:
+  data:
+    internal: true
+  admin:
+
+volumes:
+  mysql_data:
+
+secrets:
+  mysql_owner_password:
+    file: ./.secrets/mysql_owner_password.txt
+  mysql_root_password:
+    file: ./.secrets/mysql_root_password.txt
