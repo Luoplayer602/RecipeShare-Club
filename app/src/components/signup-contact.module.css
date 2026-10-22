@@ -1,0 +1,36 @@
+.contact { margin-bottom: 3px; }
+.switch { border: 1px solid #e8e2da; border-radius: 12px; padding: 3px; margin: 0 0 12px; background: #f2eee8; display: grid; grid-template-columns: 1fr 1fr; position: relative; min-width: 0; }
+.thumb { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px); background: #fff; border: 1px solid #e7dfd4; border-radius: 9px; box-shadow: 0 2px 5px #68503b0c; transition: transform .38s cubic-bezier(.22,1,.36,1); }
+.switch[data-method='phone'] .thumb { transform: translateX(100%); }
+.segment { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 6px; cursor: pointer; color: #93918b; font-size: 11px; transition: color .25s; border-radius: 8px; }
+.segment:has(input:checked) { color: #ad704b; font-weight: 700; }
+.segment:has(input:focus-visible) { outline: 2px solid #c87952; outline-offset: 2px; }
+.fields { display: grid; position: relative; }
+.emailField, .phoneField { grid-area: 1 / 1; display: grid; gap: 7px; min-width: 0; transition: transform .32s cubic-bezier(.22,1,.36,1), opacity .22s, visibility .32s; }
+.emailField { opacity: 1; visibility: visible; transform: translateX(0); }
+.phoneField { opacity: 0; visibility: hidden; transform: translateX(14px); pointer-events: none; }
+.fields[data-method='phone'] .emailField { opacity: 0; visibility: hidden; transform: translateX(-14px); pointer-events: none; }
+.fields[data-method='phone'] .phoneField { opacity: 1; visibility: visible; transform: translateX(0); pointer-events: auto; }
+.phoneWrap { padding-left: 0; gap: 10px; }
+.countryTrigger { box-sizing: border-box; width: 80px; min-width: 80px; flex: 0 0 80px; justify-content: center; display: inline-flex; align-items: center; gap: 4px; align-self: stretch; padding: 0 7px; border: 0; border-right: 1px solid #e8e4de; border-radius: 12px 0 0 12px; background: #f4f0ea; color: #806d5b; font-size: 11px; cursor: pointer; }
+.countryTrigger:hover { background: #eee5d9; }
+.countryTrigger:focus-visible { outline: 2px solid #c87952; outline-offset: 2px; }
+.countryMenu { position: fixed; inset: auto; margin: 0; max-width: calc(100vw - 24px); max-height: calc(100dvh - 24px); overflow: hidden; border: 1px solid #e6ded3; border-radius: 18px; padding: 14px; background: #fffdf9; box-shadow: 0 16px 50px #282e3524; color: #19202a; transform-origin: right top; }
+.countryMenu[open] { display: flex; flex-direction: column; animation: country-pop .28s cubic-bezier(.22,1,.36,1) both; }
+.countryMenu::backdrop { background: #26333b0a; }
+@keyframes country-pop { from { opacity: 0; transform: translateX(14px) scale(.94); } to { opacity: 1; transform: translateX(0) scale(1); } }
+.menuHeading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-shrink: 0; }
+.menuHeading h2 { font-size: 12px; font-weight: 700; margin: 0; }
+.menuHeading button { display: flex; padding: 5px; border: 0; border-radius: 50%; background: #f1ece4; color: #9d8d7b; cursor: pointer; }
+.search { display: flex; gap: 8px; align-items: center; border: 1px solid #e7e2da; border-radius: 10px; padding: 10px; color: #aa9c8b; background: #faf8f4; margin-bottom: 8px; flex-shrink: 0; }
+.search input { width: 100%; font-size: 11px; }
+.countryList { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #dfd5c8 transparent; }
+.countryList > button { display: flex; align-items: center; gap: 9px; width: 100%; border: 0; background: none; padding: 10px 7px; border-radius: 9px; cursor: pointer; color: #6d7479; font-size: 11px; text-align: left; }
+.countryList > button:hover, .countryList > button[aria-pressed='true'] { background: #f5ede3; color: #ad704b; }
+.countryList > button > span:nth-child(2) { flex: 1; }
+.countryList small { display: block; color: #b0a394; font-size: 8px; margin-top: 3px; }
+.countryList > button > span:nth-child(3) { font-size: 10px; min-width: 28px; }
+.countryMenu button:focus-visible, .search:focus-within { outline: 2px solid #c87952; outline-offset: -2px; }
+.empty { color: #a09282; padding: 22px 8px; font-size: 11px; text-align: center; }
+@media (max-height: 740px) { .switch { margin-bottom: 9px; } .segment { padding-block: 7px; } .emailField, .phoneField { gap: 5px; } }
+@media (prefers-reduced-motion: reduce) { .thumb, .segment, .emailField, .phoneField { transition: none; } .countryMenu[open] { animation: none; } }

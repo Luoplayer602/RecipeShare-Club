@@ -1,36 +1,71 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RecipeShare application
 
-## Getting Started
+Next.js App Router application with MySQL, Drizzle ORM, and password authentication.
 
-First, run the development server:
+## Local development
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Start Docker Desktop, then run from the repository root:
+
+```powershell
+docker compose up -d --wait mysql
+cd app
+pnpm.cmd install
+pnpm.cmd dev --port 3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Create `.env.local` with the runtime database credentials:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```dotenv
+DB_HOST=127.0.0.1
+DB_PORT=3307
+DB_NAME=recipeshare
+DB_USER=recipe_app
+DB_PASSWORD="<runtime-password>"
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Use `.env.migration.local` for the migration account:
 
-## Learn More
+```dotenv
+MIGRATION_DB_HOST=127.0.0.1
+MIGRATION_DB_PORT=3307
+MIGRATION_DB_NAME=recipeshare
+MIGRATION_DB_USER=recipe_owner
+MIGRATION_DB_PASSWORD="<migration-password>"
+```
 
-To learn more about Next.js, take a look at the following resources:
+Both environment files are ignored by Git. Apply migrations before using the API:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```powershell
+pnpm.cmd exec drizzle-kit migrate
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Authentication API
 
-## Deploy on Vercel
+| Method | Path | Purpose |
+| --- | --- | --- |
+| POST | /api/auth/register | Register with username, displayName, password, and email or phone |
+| POST | /api/auth/login | Sign in with identifier and password |
+| GET | /api/auth/me | Read the current authenticated user |
+| POST | /api/auth/logout | Revoke the current session and clear its cookie |
+| GET | /api/health/db | Check database access and the starter title |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Login accepts a username, email address, or international phone number as identifier.
+Passwords use scrypt. Session cookies contain a random token; MySQL stores its SHA-256 hash.
+Sessions expire after seven days. Cookies are HttpOnly, SameSite=Lax, and Secure in production.
+Production requires HTTPS. Authentication responses and validation messages use English.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The official frontend is still the Next.js scaffold. The existing UI prototype is in ../demo-ui/.
+
+## Checks
+
+```powershell
+pnpm.cmd exec tsc --noEmit
+pnpm.cmd lint
+node scripts/test-validation.mjs
+node scripts/test-login.mjs
+node --conditions=react-server scripts/test-password.mjs
+```
+
+The scripts cover validation, identifier normalization, and password hashing.
+Verify the API session lifecycle separately: login, read /me, logout, then replay the old cookie.
+The replay must return HTTP 401. Never paste session cookies or database passwords into reports.

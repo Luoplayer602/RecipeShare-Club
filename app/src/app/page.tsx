@@ -1,69 +1,263 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { useEffect, useState } from 'react'
+import { LockKeyhole, Mail, UserRound } from 'lucide-react'
+import { InteractiveAmbient } from '@/components/interactive-ambient'
+import { SignupContact } from '@/components/signup-contact'
+import { PasswordToggle } from '@/components/password-toggle'
+import { AuthToast } from '@/components/auth-toast'
+import { useRouter } from 'next/navigation'
+
+function TrayMark() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <svg className="tray-mark" viewBox="0 0 160 112" role="img" aria-label="Tray illustration">
+      <ellipse cx="80" cy="104" rx="67" ry="5" fill="#111827" opacity=".12" />
+      <path d="M24 76h112l-7 11H31l-7-11Z" fill="#d4d7dc" stroke="#737985" strokeWidth="2" />
+      <path d="M31 76c1-33 21-55 49-55s48 22 49 55H31Z" fill="#eef0f2" stroke="#737985" strokeWidth="2" />
+      <path d="M43 69c4-24 17-38 37-42 14-3 28 1 37 10-2 16-17 24-35 27-17 3-29 7-39 5Z" fill="#fff" opacity=".72" />
+      <path d="M73 20c0-8 4-12 10-12s10 4 10 12" fill="#e3e5e7" stroke="#737985" strokeWidth="2" />
+      <path d="M12 76h136" stroke="#737985" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+export default function Page() {
+  const router = useRouter()
+  const [identifier, setIdentifier] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [entering, setEntering] = useState(true)
+  const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [switching, setSwitching] = useState(false)
+  const [confirmation, setConfirmation] = useState('')
+  const [showConfirmation, setShowConfirmation] = useState(false)
+  const [notice, setNotice] = useState('')
+  const [reopening, setReopening] = useState(false)
+  const [pending, setPending] = useState(false)
+  const signup = mode === 'signup'
+  const busy = entering || switching || pending
+
+  useEffect(() => {
+    if (!entering) return
+    const timer = window.setTimeout(() => {
+      setEntering(false)
+    }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1000)
+    return () => window.clearTimeout(timer)
+  }, [entering])
+
+  useEffect(() => {
+    if (!switching) return
+    const timer = window.setTimeout(() => {
+      setPassword('')
+      setConfirmation('')
+      setShowPassword(false)
+      setShowConfirmation(false)
+      setEntering(true)
+      setReopening(true)
+      setMode(signup ? 'login' : 'signup')
+      setSwitching(false)
+    }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 880)
+    return () => window.clearTimeout(timer)
+  }, [switching, signup])
+
+  function switchMode() {
+    if (busy) return
+    setNotice('')
+    setSwitching(true)
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (busy) return
+
+    if (!signup) {
+      setPending(true)
+      setNotice('')
+
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier, password }),
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          setNotice(
+            data.message ??
+            (response.status === 422
+              ? 'Please enter your login identifier and password.'
+              : 'Login is currently unavailable.'),
+          )
+          return
+        }
+
+        router.replace('/home')
+      } catch {
+        setNotice('Unable to reach the server. Please try again.')
+      } finally {
+        setPending(false)
+      }
+
+      return
+    }
+
+    if (password !== confirmation) {
+      setNotice('Passwords do not match.')
+      return
+    }
+
+    const form = new FormData(event.currentTarget)
+    const method = form.get('contactMethod')
+    const nationalPhone = String(form.get('phoneNational') ?? '')
+      .replace(/[\s().-]/g, '')
+
+    // Accept national input for Vietnam or an explicit international number.
+    const phone = nationalPhone.startsWith('+')
+      ? nationalPhone
+      : `${form.get('phoneDialCode') ?? ''}${
+          form.get('phoneCountry') === 'VN'
+            ? nationalPhone.replace(/^0/, '')
+            : nationalPhone
+        }`
+
+    const payload = {
+      username: String(form.get('username') ?? ''),
+      displayName: String(form.get('displayName') ?? ''),
+      password,
+      ...(method === 'phone'
+        ? { phone: nationalPhone ? phone : '' }
+        : { email: String(form.get('email') ?? '') }),
+    }
+
+    setPending(true)
+    setNotice('')
+
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        if (data.code === 'VALIDATION_ERROR') {
+          const fieldErrors = Object.values(
+            data.errors?.fieldErrors ?? {},
+          ).flat()
+
+          setNotice(
+            String(
+              fieldErrors[0] ??
+              data.errors?.formErrors?.[0] ??
+              'Please check your information.',
+            ),
+          )
+        } else {
+          setNotice(data.message ?? 'Registration is currently unavailable.')
+        }
+        return
+      }
+
+      setPassword('')
+      setConfirmation('')
+      setShowPassword(false)
+      setShowConfirmation(false)
+      setNotice('Registration successful. Please sign in.')
+    } catch {
+      setNotice('Unable to reach the server. Please try again.')
+    } finally {
+      setPending(false)
+    }
+  }
+
+  return (
+    <main className={`login-stage${reopening ? ' is-reopening' : ''}${switching ? ' is-switching' : ''}${signup ? ' is-signup' : ''}`}>
+      <InteractiveAmbient className="ambient-one" />
+      <InteractiveAmbient className="ambient-two" />
+      <InteractiveAmbient className="ambient-three" />
+      <InteractiveAmbient className="ambient-four" />
+      <InteractiveAmbient className="ambient-five" />
+      <section className="login-shell" aria-label={signup ? 'Đăng ký' : 'Đăng nhập'}>
+        <div className="brand-mark"><TrayMark /></div>
+        <div key={mode} className="login-card" aria-busy={switching || pending} inert={switching || pending}>
+          <div className="card-heading">
+            <p className="eyebrow">{signup ? 'JOIN THE CLUB' : 'WELCOME BACK'}</p>
+            <h1>{signup ? 'Đăng ký' : 'Đăng nhập'}</h1>
+            <p className="subheading">{signup ? 'Tạo tài khoản để cùng chia sẻ những món ngon.' : 'Chào mừng bạn trở lại. Hãy đăng nhập để tiếp tục.'}</p>
+          </div>
+
+          <form
+            className="login-form"
+            noValidate
+            autoComplete="on"
+            onSubmit={handleSubmit}
+            aria-busy={pending}
+          >
+            <div className={signup ? 'signup-grid' : 'login-fields'}>
+              <div className="signup-details">
+                {signup ? <>
+                  <SignupContact />
+                  <div className="auth-field">
+                    <label className="field-label" htmlFor="signup-username">Username</label>
+                    <div className="input-wrap">
+                      <UserRound aria-hidden="true" />
+                      <input id="signup-username" name="username" placeholder="Ví dụ: minhan" autoComplete="username" autoCapitalize="none" spellCheck={false} maxLength={32} />
+                    </div>
+                  </div>
+                  <div className="auth-field">
+                    <label className="field-label" htmlFor="signup-display-name">Tên hiển thị</label>
+                    <div className="input-wrap">
+                      <UserRound aria-hidden="true" />
+                      <input id="signup-display-name" name="displayName" placeholder="Tên mọi người nhìn thấy" autoComplete="nickname" maxLength={80} />
+                    </div>
+                  </div>
+                </> : <>
+                  <label className="field-label" htmlFor="identifier">Username / Email / Phone</label>
+                  <div className="input-wrap">
+                    <UserRound aria-hidden="true" />
+                    <input id="identifier" name="username" value={identifier} onChange={event => setIdentifier(event.target.value)} placeholder="Nhập username, email hoặc phone" autoComplete="username" />
+                  </div>
+                </>}
+              </div>
+              <div className="signup-passwords"><div className="auth-field password-field">
+                <div className="password-heading">
+                  <label className="field-label" htmlFor="password">{signup ? 'Nhập mật khẩu mới' : 'Mật khẩu'}</label>
+                </div>
+                <div className="input-wrap">
+                  <LockKeyhole aria-hidden="true" />
+                  <input id="password" name="password" type={showPassword ? 'text' : 'password'} value={password} onChange={event => setPassword(event.target.value)} placeholder={signup ? 'Nhập mật khẩu mới' : 'Nhập mật khẩu'} autoComplete={signup ? 'new-password' : 'current-password'} />
+                  <PasswordToggle visible={showPassword} onToggle={() => setShowPassword(value => !value)} inputId="password" label="mật khẩu" />
+                </div>
+                </div>{signup && <div className="auth-field confirmation-field">
+                  <div className="password-heading"><label className="field-label" htmlFor="confirmation">Nhập lại mật khẩu</label></div>
+                  <div className="input-wrap">
+                    <LockKeyhole aria-hidden="true" />
+                    <input id="confirmation" name="passwordConfirmation" type={showConfirmation ? 'text' : 'password'} value={confirmation} onChange={event => setConfirmation(event.target.value)} placeholder="Nhập lại mật khẩu mới" autoComplete="new-password" />
+                    <PasswordToggle visible={showConfirmation} onToggle={() => setShowConfirmation(value => !value)} inputId="confirmation" label="mật khẩu nhập lại" />
+                  </div>
+                </div>}
+              </div>
+            </div>
+            {!signup && <a className="forgot-link" href="#forgot">Quên mật khẩu?</a>}
+            <button className="submit-button" type="submit" disabled={busy}>{signup ? 'Tạo tài khoản' : 'Đăng nhập'} <span aria-hidden="true">→</span></button>
+          </form>
+
+          <div className="divider"><span>hoặc tiếp tục với</span></div>
+          <div className="social-row">
+            <button className="social-button" type="button" disabled={busy} onClick={() => setNotice('Google sign-in is not available yet.')}><span className="google-icon">G</span> Google</button>
+            <button className="social-button" type="button" disabled={busy} onClick={() => setNotice('Facebook sign-in is not available yet.')}><span className="facebook-icon">f</span> Facebook</button>
+          </div>
+          <p className="signup-copy">{signup ? 'Đã có tài khoản? ' : 'Chưa có tài khoản? '}
+            <a href={signup ? '#login' : '#signup'} aria-disabled={busy} onClick={(event) => { event.preventDefault(); switchMode() }}>{signup ? 'Đăng nhập ngay' : 'Đăng ký ngay'}</a>
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+      </section>
+      <AuthToast message={notice} />
+      <p className="reference-note"><Mail aria-hidden="true" /> Bảo mật &amp; riêng tư là ưu tiên của chúng tôi</p>
+    </main>
+  )
 }
