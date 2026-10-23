@@ -2,8 +2,10 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, Bookmark, ChefHat, Clock3, Share2, Users } from 'lucide-react'
+import { ArrowLeft, ChefHat, Clock3, Share2, Users } from 'lucide-react'
+import { AuthToast } from '@/components/auth-toast'
 import { ChefLoader } from '@/components/chef-loader'
+import { SavePostButton } from './save-post-button'
 import { CommunityFrame } from './frame'
 import type { PostDetail, SessionUser } from './types'
 import shell from './shell.module.css'
@@ -25,7 +27,7 @@ function youtubeEmbed(source: string) {
 export function CommunityPost({ id, user }: { id: string; user: SessionUser | null }) {
   const [post, setPost] = useState<PostDetail | null>(null)
   const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
+  const [notice, setNotice] = useState({ message: '', revision: 0 })
   const [retry, setRetry] = useState(0)
   useEffect(() => {
     const controller = new AbortController()
@@ -40,9 +42,15 @@ export function CommunityPost({ id, user }: { id: string; user: SessionUser | nu
     void read()
     return () => controller.abort()
   }, [id, retry])
+  useEffect(() => {
+    if (!notice.message) return
+    const timer = setTimeout(() => setNotice(value => ({ ...value, message: '' })), 4500)
+    return () => clearTimeout(timer)
+  }, [notice])
+  function notify(message: string) { setNotice(value => ({ message, revision: value.revision + 1 })) }
   async function share() {
-    try { await navigator.clipboard.writeText(location.href); setNotice('Đã sao chép liên kết bài viết.') }
-    catch { setNotice('Bạn có thể sao chép địa chỉ trên thanh trình duyệt để chia sẻ.') }
+    try { await navigator.clipboard.writeText(location.href); notify('Đã sao chép liên kết bài viết.') }
+    catch { notify('Bạn có thể sao chép địa chỉ trên thanh trình duyệt để chia sẻ.') }
   }
   const mediaById = new Map(post?.media.map(media => [media.id, media]))
   const cover = post?.media.find(media => media.id === post.coverMediaId)
@@ -52,9 +60,8 @@ export function CommunityPost({ id, user }: { id: string; user: SessionUser | nu
         <Link href="/home" className={styles.back}><ArrowLeft size={14} />Trở về căn bếp</Link>
         <div className={styles.topline}><div className={styles.tags}>{post.tags.map(tag => <Link key={tag.id} href={`/home?tag=${encodeURIComponent(tag.slug)}`}>{tag.name}</Link>)}</div>{post.recipe && <div className={extra.facts}><span><Clock3 size={14} />Chuẩn bị: {post.recipe.prepMinutes ?? '—'} phút</span><span><Clock3 size={14} />Chế biến: {post.recipe.cookMinutes ?? '—'} phút</span><span><Users size={14} />{post.recipe.servings ?? '—'} người</span><span><ChefHat size={14} />Độ khó: {post.recipe.difficulty ?? '—'}/5</span></div>}</div>
         <h1>{post.title}</h1><p className={styles.lead}>{post.excerpt}</p>
-        <div className={styles.byline}><span className={styles.smallAvatar}>{post.author.displayName.slice(0, 1).toUpperCase()}</span><div><strong>{post.author.displayName}</strong><small>{post.author.titleName}</small></div><time dateTime={post.publishedAt}>{new Date(post.publishedAt).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}</time></div>
-        <div className={styles.actions}><span>{post.type === 'recipe' ? 'Công thức từ cộng đồng' : 'Chuyện trong bếp'}</span><button disabled title="Chức năng lưu bài chưa sẵn sàng"><Bookmark size={16} />Lưu bài viết</button><button onClick={share}><Share2 size={16} />Chia sẻ</button></div>
-        {notice && <p role="status">{notice}</p>}
+        <div className={styles.byline}><Link href={`/profile/${encodeURIComponent(post.author.username)}`} className={styles.authorLink} aria-label={`Xem trang cá nhân của ${post.author.displayName}`}><span className={styles.smallAvatar}>{post.author.avatarUrl ? <Image src={post.author.avatarUrl} alt="" width={35} height={35} unoptimized /> : post.author.displayName.slice(0, 1).toUpperCase()}</span><div><strong>{post.author.displayName}</strong><small>{post.author.titleName}</small></div></Link><time dateTime={post.publishedAt}>{new Date(post.publishedAt).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}</time></div>
+        <div className={styles.actions}><span>{post.type === 'recipe' ? 'Công thức từ cộng đồng' : 'Chuyện trong bếp'}</span><SavePostButton key={user?.id ?? 'guest'} id={post.id} title={post.title} /><button onClick={share}><Share2 size={16} />Chia sẻ</button></div>
         {cover?.url && <figure className={styles.hero}><div className={extra.hero}><Image src={cover.url} alt={post.title} width={1200} height={600} unoptimized priority /></div></figure>}
         {post.recipe && <section className={styles.ingredients}><div className={styles.sectionHeading}><span>01</span><h2>Chuẩn bị nguyên liệu</h2></div><p>Cho {post.recipe.servings ?? '—'} người · Đánh dấu những nguyên liệu bạn đã có.</p><div className={styles.ingredientList}>{post.recipe.ingredients.map((ingredient, index) => <label key={`${ingredient.position}:${index}`}><input type="checkbox" /><span>{ingredient.name} — {[ingredient.quantity, ingredient.unit].filter(Boolean).join(' ')}{ingredient.note && <small> · {ingredient.note}</small>}</span></label>)}</div></section>}
         <div className={extra.blocks}>{groupImages(post.blocks, block => block.data.type === 'image' && Boolean(mediaById.get(block.data.mediaId)?.url)).map(group => {
@@ -77,5 +84,6 @@ export function CommunityPost({ id, user }: { id: string; user: SessionUser | nu
         })}</div>
       </article>}
     </main>
+    <AuthToast key={notice.revision} message={notice.message} />
   </CommunityFrame>
 }

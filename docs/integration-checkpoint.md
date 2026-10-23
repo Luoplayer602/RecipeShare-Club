@@ -79,3 +79,23 @@ Commit validation: full production ESLint and real editor/profile integration te
 
 Authentication navigation repair: consume and clear the successful-login flag/password before leaving the form. Complete-login/logout Server Actions invalidate auth-dependent navigation state and return to the public home; login re-emits the existing validated session cookie without extending its database expiration. Sidebar/menu link directly to the signed-in username's profile; guests go directly to login instead of caching a redirect from /profile. Profile component keys include viewer identity so owner state is reset when the session changes. Added scripts/test-auth-navigation.mjs for repeated real form login/logout, protected-profile navigation and document-preservation checks with isolated fixture cleanup (Chrome required).
 Validation: full ESLint/build passed. The regression browser test passed against both dev and production, including logout from home and an owner profile, guest home browsing, login/profile clicks after logout, clearing the retained password, and three real UI logins without a document reload. Isolated users/sessions were removed. Windows may temporarily lock the Chrome test profile in the OS temp directory; this is separate from fixture/database cleanup. Existing two media tracing warnings remain.
+
+### Lưu bài viết theo tài khoản
+- Mang giao diện Đã lưu từ demo sang bản chính; dùng chung nút bookmark trong danh sách, hồ sơ và trang đọc, hỗ trợ khách chuyển tới đăng nhập.
+- Migration `0005_saved_posts` đã áp dụng ở database phát triển: khóa kép người dùng/bài viết, xóa dây chuyền và index thứ tự lưu.
+- API `GET /api/posts?saved=1`, `GET /api/saved-posts` (bộ đếm), `GET/PUT/DELETE /api/posts/[id]/save`; giới hạn theo phiên, chặn mutation khác origin, chỉ hiện bài published chưa xóa. PUT/DELETE idempotent.
+- Danh sách mới lưu trước, tìm kiếm/lọc/phân trang, tự quay về trang còn dữ liệu khi bỏ bài cuối trang; giữ hiệu ứng trống/chuyển danh sách, đồng bộ bookmark và bộ đếm sau thao tác.
+- Kiểm tra TypeScript, lint, production build đạt (hai cảnh báo tracing media có sẵn). `node scripts/test-saved-posts.mjs` đạt với hai tài khoản và dữ liệu cô lập tự dọn: quyền truy cập, origin, trùng lặp, thứ tự, tìm kiếm, phân trang, bài ẩn, bỏ lưu lặp lại.
+- Kiểm thử Chrome thực tế đạt: lưu từ trang chủ, mở Đã lưu, vào trang đọc bỏ lưu, trở lại danh sách trống có hoạt ảnh; màn hình 390px không tràn ngang, không có lỗi JavaScript. Home được key theo phiên để không giữ danh sách riêng của tài khoản trước.
+
+### Bộ lọc nhãn của Đã lưu
+- Ẩn hàng lọc loại bài tại Đã lưu; tag phổ biến/số bài tính trên bộ sưu tập của tài khoản, độc lập trang/từ khóa/tag đang lọc.
+- Nhấn thường chọn nhanh một tag; giữ 450ms (hoặc Shift + Enter/nhấn) ghim tag, kết hợp với các tag khác theo giao (bài có đủ mọi tag). Nhấn lại bỏ tag. Số lượng trượt ngang thành × khi ghim; hỗ trợ reduced motion.
+- Hủy giữ khi kéo/vuốt quá 8px, pointer cancel hoặc rời nút; ngăn click tiếp sau long press. URL `tag` giữ tương thích cũ, `tags` chứa các tag ghim (tối đa 10), khôi phục khi reload/Back.
+- Kiểm thử API đạt: đếm tag theo saved collection, loại tag chỉ có ở bài chưa lưu, lọc giao và giới hạn đầu vào. Kiểm thử Chrome cảm ứng 390px đạt: giữ hai tag, chuyển số → ×, vuốt không ghim, bỏ tag, reload và luồng lưu/bỏ lưu.
+
+### Hành động trong trang đọc
+- Sửa selector căn hàng actions để chỉ mô tả cộng đồng đẩy về trái, nút lưu sát chia sẻ trên desktop/mobile.
+- Chia sẻ dùng AuthToast có sẵn, tự ẩn sau 4.5 giây, hiển thị lại khi nhấn tiếp; không thêm dòng vào nội dung bài.
+- Avatar và tên tác giả dẫn đến `/profile/[username]`, hỗ trợ ảnh đại diện thật, hover/focus.
+- TypeScript/lint đạt; Chrome 1440px và 390px đạt: khoảng cách hai nút, popup cố định không dịch nội dung, tự ẩn, liên kết hồ sơ tác giả, không tràn ngang/không lỗi JavaScript.

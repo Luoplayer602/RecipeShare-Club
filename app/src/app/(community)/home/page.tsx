@@ -5,7 +5,7 @@ import { CommunityHome } from '@/components/community/home'
 
 async function HomeWithSession() {
   const user = await getSessionUser()
-  return <CommunityHome user={user} />
+  return <CommunityHome key={user?.id ?? 'guest'} user={user} />
 }
 export default function HomePage() {
   return <Suspense fallback={<ChefLoader />}><HomeWithSession /></Suspense>

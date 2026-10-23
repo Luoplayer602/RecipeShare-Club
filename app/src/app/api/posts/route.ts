@@ -16,6 +16,7 @@ import {
 } from 'drizzle-orm'
 
 import {
+  savedPosts,
   mediaAssets,
   posts,
   recipeDetails,
@@ -185,12 +186,15 @@ export async function GET(request: Request) {
   const query = parsed.data
 
   try {
+    const viewer = query.saved ? await getSessionUser() : null
+    if (query.saved && !viewer) return respond({ code: 'UNAUTHENTICATED' }, 401)
     const result = await db.transaction(async tx => {
       const conditions = [
         eq(posts.status, 'published'),
         isNull(posts.deletedAt),
       ]
 
+      if (viewer) conditions.push(exists(tx.select({ id: savedPosts.postId }).from(savedPosts).where(and(eq(savedPosts.postId, posts.id), eq(savedPosts.userId, viewer.id)))))
       if (query.type) {
         conditions.push(eq(posts.type, query.type))
       }
@@ -202,14 +206,15 @@ export async function GET(request: Request) {
         )
       }
 
-      if (query.tag) {
+      const selectedSlugs = [...new Set([...(query.tags ?? []), ...(query.tag ? [query.tag] : [])])]
+      for (const slug of selectedSlugs) {
         conditions.push(exists(
           tx.select({ postId: postTags.postId })
             .from(postTags)
             .innerJoin(tags, eq(postTags.tagId, tags.id))
             .where(and(
               eq(postTags.postId, posts.id),
-              eq(tags.slug, query.tag),
+              eq(tags.slug, slug),
             )),
         ))
       }
@@ -249,7 +254,7 @@ export async function GET(request: Request) {
         .innerJoin(userTitles, eq(users.titleId, userTitles.id))
         .leftJoin(recipeDetails, eq(recipeDetails.postId, posts.id))
         .where(filter)
-        .orderBy(desc(posts.publishedAt), desc(posts.id))
+        .orderBy(...(viewer ? [desc(sql`(SELECT created_at FROM saved_posts WHERE user_id = ${viewer.id} AND post_id = ${posts.id})`), desc(posts.id)] : [desc(posts.publishedAt), desc(posts.id)]))
         .limit(query.limit)
         .offset((query.page - 1) * query.limit)
 
@@ -258,23 +263,22 @@ export async function GET(request: Request) {
         .from(postTags).innerJoin(tags, eq(postTags.tagId, tags.id))
         .where(inArray(postTags.postId, items.map(item => item.id))) : []
 
-      // Rank across published, non-deleted posts, independently of the current page/filter.
+      // Counts describe the whole current collection, independently of search/tag/page filters.
       const popularTags = await tx.select({ id: tags.id, name: tags.name, slug: tags.slug, postCount: count() })
         .from(tags)
         .innerJoin(postTags, eq(postTags.tagId, tags.id))
         .innerJoin(posts, eq(postTags.postId, posts.id))
-        .where(and(eq(posts.status, 'published'), isNull(posts.deletedAt)))
+        .where(and(eq(posts.status, 'published'), isNull(posts.deletedAt), viewer ? exists(tx.select({ id: savedPosts.postId }).from(savedPosts).where(and(eq(savedPosts.postId, posts.id), eq(savedPosts.userId, viewer.id)))) : undefined))
         .groupBy(tags.id, tags.name, tags.slug)
         .orderBy(desc(count()), asc(tags.name), asc(tags.id))
         .limit(12)
-      const selectedTag = query.tag
-        ? popularTags.find(tag => tag.slug === query.tag) ?? (await tx.select({ id: tags.id, name: tags.name, slug: tags.slug })
-          .from(tags).where(eq(tags.slug, query.tag)).limit(1))[0] ?? null
-        : null
+      const selectedTags = selectedSlugs.length ? await tx.select({ id: tags.id, name: tags.name, slug: tags.slug }).from(tags).where(inArray(tags.slug, selectedSlugs)) : []
+      const selectedTag = selectedTags.find(tag => tag.slug === query.tag) ?? null
 
       return {
         popularTags: popularTags.map(tag => ({ ...tag, postCount: Number(tag.postCount) })),
         selectedTag,
+        selectedTags,
         posts: items.map(item => ({
           ...item,
           tags: tagRows.filter(tag => tag.postId === item.id).map(({ id, name, slug }) => ({ id, name, slug })),

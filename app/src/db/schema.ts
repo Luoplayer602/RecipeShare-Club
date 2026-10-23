@@ -463,3 +463,8 @@ export const postRevisions = mysqlTable(
     ),
   ],
 )
+export const savedPosts = mysqlTable('saved_posts', {
+  userId: varchar('user_id', { length: 36 }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+  postId: varchar('post_id', { length: 36 }).notNull().references(() => posts.id, { onDelete: 'cascade' }),
+  createdAt: datetime('created_at', { mode: 'date', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+}, table => [primaryKey({ columns: [table.userId, table.postId] }), index('saved_posts_user_created_idx').on(table.userId, table.createdAt, table.postId)])

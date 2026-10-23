@@ -16,4 +16,4 @@ export type PostDetail = Omit<PostSummary, 'recipe' | 'coverUrl'> & {
   media: { id: string; kind: 'image' | 'video'; source: 'upload' | 'url'; mimeType: string | null; url: string | null }[];
 }
 export type PopularTag = Tag & { postCount: number }
-export type PostList = { popularTags: PopularTag[]; selectedTag: Tag | null; posts: PostSummary[]; pagination: { page: number; limit: number; total: number; totalPages: number; hasNext: boolean } }
+export type PostList = { popularTags: PopularTag[]; selectedTag: Tag | null; selectedTags?: Tag[]; posts: PostSummary[]; pagination: { page: number; limit: number; total: number; totalPages: number; hasNext: boolean } }

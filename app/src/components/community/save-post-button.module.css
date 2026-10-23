@@ -1,0 +1,11 @@
+.button { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:44px; border-radius:12px; transition:color .25s,background .25s,transform .2s; touch-action:manipulation; }
+.button[aria-pressed='true'] { color:#ad603c; }
+.button:active { transform:scale(.95); }
+.button:focus-visible { outline:2px solid #bd704b; outline-offset:3px; }
+.button > span:first-child { display:inline-flex; }
+.changed { animation:bookmark-pop .5s cubic-bezier(.22,.8,.3,1); }
+@keyframes bookmark-pop { 0% { transform:scale(.65) rotate(-15deg); } 55% { transform:scale(1.25) rotate(8deg); } 100% { transform:scale(1) rotate(0); } }
+@media(prefers-reduced-motion:reduce) { .changed { animation:none; } .button { transition:none; } }
+
+.wrap { display:inline-flex; flex-direction:column; align-items:flex-end; gap:4px; }
+.wrap small { max-width:220px; color:#ad603c; font-size:11px; }
