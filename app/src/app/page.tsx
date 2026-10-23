@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { LockKeyhole, Mail, UserRound } from 'lucide-react'
 import { InteractiveAmbient } from '@/components/interactive-ambient'
 import { SignupContact } from '@/components/signup-contact'
@@ -10,7 +11,7 @@ import { useRouter } from 'next/navigation'
 
 function TrayMark() {
   return (
-    <svg className="tray-mark" viewBox="0 0 160 112" role="img" aria-label="Tray illustration">
+    <svg className="tray-mark" viewBox="0 0 160 112" role="img" aria-label="Đĩa có nắp">
       <ellipse cx="80" cy="104" rx="67" ry="5" fill="#111827" opacity=".12" />
       <path d="M24 76h112l-7 11H31l-7-11Z" fill="#d4d7dc" stroke="#737985" strokeWidth="2" />
       <path d="M31 76c1-33 21-55 49-55s48 22 49 55H31Z" fill="#eef0f2" stroke="#737985" strokeWidth="2" />
@@ -248,8 +249,8 @@ export default function Page() {
 
           <div className="divider"><span>hoặc tiếp tục với</span></div>
           <div className="social-row">
-            <button className="social-button" type="button" disabled={busy} onClick={() => setNotice('Google sign-in is not available yet.')}><span className="google-icon">G</span> Google</button>
-            <button className="social-button" type="button" disabled={busy} onClick={() => setNotice('Facebook sign-in is not available yet.')}><span className="facebook-icon">f</span> Facebook</button>
+            <button className="social-button" type="button" disabled={busy} onClick={() => setNotice('Google sign-in is not available yet.')}><Image src="/icons/Google__G__logo.svg" alt="" width={18} height={18} unoptimized /> Google</button>
+            <button className="social-button" type="button" disabled={busy} onClick={() => setNotice('Facebook sign-in is not available yet.')}><Image src="/icons/2023_Facebook_icon.svg" alt="" width={18} height={18} unoptimized /> Facebook</button>
           </div>
           <p className="signup-copy">{signup ? 'Đã có tài khoản? ' : 'Chưa có tài khoản? '}
             <a href={signup ? '#login' : '#signup'} aria-disabled={busy} onClick={(event) => { event.preventDefault(); switchMode() }}>{signup ? 'Đăng nhập ngay' : 'Đăng ký ngay'}</a>

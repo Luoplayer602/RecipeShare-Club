@@ -109,7 +109,7 @@ input::placeholder { color: #b1b5b9; }
 .icon-button { display: grid; place-items: center; padding: 2px; border: 0; background: transparent; color: #969da4; cursor: pointer; }
 .icon-button svg { width: 17px; height: 17px; }
 .submit-button { position: relative; display: flex; align-items: center; justify-content: center; min-height: 44px; margin-top: 12px; padding: 0 48px; border: 0; border-radius: 13px; background: #26333b; color: white; font-size: 13px; font-weight: 800; cursor: pointer; box-shadow: 0 9px 16px rgba(38,51,59,.18); transition: transform .2s, background .2s; }
-.submit-button:enabled:hover { background: #bb6843; transform: translateY(-2px); }
+@media (hover: hover) and (pointer: fine) { .submit-button:enabled:hover { background: #bb6843; transform: translateY(-2px); } }
 .submit-button span { position: absolute; right: 18px; font-size: 20px; font-weight: 400; }
 .signup-copy a[aria-disabled="true"] { pointer-events: none; }
 .submit-button:disabled, .social-button:disabled { cursor: default; }
@@ -117,7 +117,7 @@ input::placeholder { color: #b1b5b9; }
 .divider::before, .divider::after { content: ''; height: 1px; flex: 1; background: #e7e7e5; }
 .social-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .social-button { display: flex; justify-content: center; align-items: center; gap: 9px; min-height: 44px; border: 1px solid #e2e4e5; border-radius: 12px; background: white; color: #4d555d; font-size: 12px; font-weight: 700; cursor: pointer; }
-.social-button:hover { border-color: #c87952; background: #fffaf7; }
+@media (hover: hover) and (pointer: fine) { .social-button:hover { border-color: #c87952; background: #fffaf7; } }
 .google-icon, .facebook-icon { font-size: 17px; font-weight: 800; }
 .google-icon { color: #4285f4; }
 .facebook-icon { display: grid; place-items: end center; width: 18px; height: 18px; border-radius: 50%; background: #1877f2; color: white; font-family: Arial; }
@@ -168,4 +168,25 @@ input::placeholder { color: #b1b5b9; }
   .is-signup .login-shell { width: min(100%, 420px); }
   .signup-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
   .signup-grid .auth-field, .signup-grid .signup-details > div:not(.auth-field) > fieldset, .signup-grid .signup-details > div:not(.auth-field) > div { grid-column: 1; grid-row: auto; }
+}
+/* Match browser autofill to the field without disabling password managers. */
+.input-wrap input:autofill {
+  box-shadow: 0 0 0 1000px #fbfbfa inset;
+  color: #19202a;
+  caret-color: #19202a;
+}
+.input-wrap input:-webkit-autofill,
+.input-wrap input:-webkit-autofill:hover,
+.input-wrap input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #fbfbfa inset;
+  -webkit-text-fill-color: #19202a;
+  caret-color: #19202a;
+}
+
+/* Decorative layers must never intercept touch input. */
+.brand-mark, .reference-note { pointer-events:none; }
+@media (hover:none) and (pointer:coarse) {
+  input:not([type='radio']):not([type='checkbox']):not([type='file']), textarea, select { font-size:16px!important; }
+  button, a, label { touch-action:manipulation; }
+  .login-stage .submit-button, .login-stage .social-button { min-height:44px; }
 }

@@ -5,3 +5,9 @@
 .secrets/
 backups/
 demo-ui/
+/demo-ui-worktree/
+.agents/
+.clinerules
+
+# Local uploaded media
+.uploads/

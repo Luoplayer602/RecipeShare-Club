@@ -13,7 +13,7 @@
 .fields[data-method='phone'] .phoneField { opacity: 1; visibility: visible; transform: translateX(0); pointer-events: auto; }
 .phoneWrap { padding-left: 0; gap: 10px; }
 .countryTrigger { box-sizing: border-box; width: 80px; min-width: 80px; flex: 0 0 80px; justify-content: center; display: inline-flex; align-items: center; gap: 4px; align-self: stretch; padding: 0 7px; border: 0; border-right: 1px solid #e8e4de; border-radius: 12px 0 0 12px; background: #f4f0ea; color: #806d5b; font-size: 11px; cursor: pointer; }
-.countryTrigger:hover { background: #eee5d9; }
+@media (hover:hover) and (pointer:fine) { .countryTrigger:hover { background: #eee5d9; } }
 .countryTrigger:focus-visible { outline: 2px solid #c87952; outline-offset: 2px; }
 .countryMenu { position: fixed; inset: auto; margin: 0; max-width: calc(100vw - 24px); max-height: calc(100dvh - 24px); overflow: hidden; border: 1px solid #e6ded3; border-radius: 18px; padding: 14px; background: #fffdf9; box-shadow: 0 16px 50px #282e3524; color: #19202a; transform-origin: right top; }
 .countryMenu[open] { display: flex; flex-direction: column; animation: country-pop .28s cubic-bezier(.22,1,.36,1) both; }
