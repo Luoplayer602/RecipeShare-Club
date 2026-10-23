@@ -1,0 +1,23 @@
+
+.nav { position: relative; display: grid; gap: 8px; isolation: isolate; }
+.nav .marker { position: absolute; inset: 0 0 auto; height: 48px; border-radius: 13px; background: #eae0d5; border: 1px solid #decab7; pointer-events: none; z-index: 0; transform:translateY(calc(var(--selected-index, 0) * 56px)); }
+.nav .item { position: relative; z-index: 1; }
+.nav .item { box-sizing: border-box; display: flex; align-items: center; gap: 12px; height: 48px; min-width: 0; padding: 12px 14px; border: 1px solid transparent; border-radius: 13px; background: transparent; color: #78808a; font-family: Arial, Helvetica, sans-serif; font-size: 12px; font-weight: 400; line-height: 1.25; text-align: left; text-decoration: none; transition: background-color .2s, color .2s; }
+.nav .item:hover { background: #e4ddd373; color: #ac5a36; text-decoration: none; }
+.nav .item[aria-current], .nav .item[aria-pressed='true'] { color: #b65f39; font-weight: 700; }
+.nav .item > svg { flex-shrink: 0; }
+.nav .item .label { margin: 0; font-size: 12px; }
+.nav .item small { margin-left: auto; font-size: 10px; }
+@media (max-width:760px) { .nav .item { padding: 12px 0; justify-content: center; gap: 0; } .nav .item .label, .nav .item small { display: none; } }
+
+.nav.nav { gap: 8px; }
+
+@media(max-width:760px) {
+  .nav.nav { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px; width:100%; }
+  .nav .marker { width:calc((100% - 12px)/4); height:56px; border-radius:18px; inset:0 auto auto 0; transform:translateX(calc(var(--selected-index, 0) * (100% + 4px))); background:#eae0d5; border-color:#dfcdbb; }
+  .nav .item { height:56px; padding:7px 3px; flex-direction:column; justify-content:center; gap:5px; border-radius:18px; }
+  .nav .item .label { display:block; font-size:10px; line-height:1.1; margin:0; white-space:nowrap; font-weight:inherit; }
+  .nav .item > svg { width:21px; height:21px; }
+  .nav .item small { display:block; position:absolute; top:4px; left:calc(50% + 10px); min-width:15px; padding:2px 4px; border-radius:9px; font-size:8px; line-height:1; color:#fff; background:#a66d49; text-align:center; }
+  .nav .item small:empty { display:none; }
+}

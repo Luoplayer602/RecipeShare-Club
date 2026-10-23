@@ -1,0 +1,4 @@
+.textarea.textarea { box-sizing: border-box; resize: none; scrollbar-gutter: stable; max-height: min(360px, 45dvh); scrollbar-width: thin; scrollbar-color: #d9d3ca transparent; overscroll-behavior-y: contain; }
+.textarea::-webkit-scrollbar { width: 7px; }
+.textarea::-webkit-scrollbar-thumb { border-radius: 10px; background: #d9d3ca; }
+.textarea::-webkit-scrollbar-track { background: transparent; }

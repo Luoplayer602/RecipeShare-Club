@@ -5,7 +5,7 @@ import { and, eq, gt } from 'drizzle-orm'
 import { cookies } from 'next/headers'
 import { connection } from 'next/server'
 import { db } from '@/db'
-import { users, userSessions } from '@/db/schema'
+import { users, userSessions, userTitles } from '@/db/schema'
 
 const COOKIE_NAME = 'recipe_session'
 const SESSION_SECONDS = 7 * 24 * 60 * 60
@@ -55,10 +55,12 @@ export async function getSessionUser() {
       displayName: users.displayName,
       role: users.role,
       titleId: users.titleId,
+      titleName: userTitles.name,
       avatarUrl: users.avatarUrl,
     })
     .from(userSessions)
     .innerJoin(users, eq(userSessions.userId, users.id))
+    .innerJoin(userTitles, eq(users.titleId, userTitles.id))
     .where(
       and(
         eq(userSessions.tokenHash, hashToken(token)),

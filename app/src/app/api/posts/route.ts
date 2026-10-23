@@ -3,23 +3,24 @@ import { z } from 'zod'
 import { db } from '@/db'
 import { getSessionUser } from '@/lib/auth/session'
 import { createDraftSchema } from '@/lib/posts/validation'
-// Replace the existing drizzle-orm import.
 import {
   and,
+  asc,
   count,
   desc,
   eq,
   exists,
+  inArray,
   isNull,
   sql,
 } from 'drizzle-orm'
 
-// Add users, postTags, and tags to the existing schema import.
 import {
   mediaAssets,
   posts,
   recipeDetails,
   users,
+  userTitles,
   postTags,
   tags,
 } from '@/db/schema'
@@ -233,6 +234,7 @@ export async function GET(request: Request) {
             id: users.id,
             username: users.username,
             displayName: users.displayName,
+            titleName: userTitles.name,
             avatarUrl: users.avatarUrl,
           },
           recipe: {
@@ -244,6 +246,7 @@ export async function GET(request: Request) {
         })
         .from(posts)
         .innerJoin(users, eq(posts.authorId, users.id))
+        .innerJoin(userTitles, eq(users.titleId, userTitles.id))
         .leftJoin(recipeDetails, eq(recipeDetails.postId, posts.id))
         .where(filter)
         .orderBy(desc(posts.publishedAt), desc(posts.id))
@@ -251,10 +254,30 @@ export async function GET(request: Request) {
         .offset((query.page - 1) * query.limit)
 
       const total = Number(totalRow?.total ?? 0)
+      const tagRows = items.length ? await tx.select({ postId: postTags.postId, id: tags.id, name: tags.name, slug: tags.slug })
+        .from(postTags).innerJoin(tags, eq(postTags.tagId, tags.id))
+        .where(inArray(postTags.postId, items.map(item => item.id))) : []
+
+      // Rank across published, non-deleted posts, independently of the current page/filter.
+      const popularTags = await tx.select({ id: tags.id, name: tags.name, slug: tags.slug, postCount: count() })
+        .from(tags)
+        .innerJoin(postTags, eq(postTags.tagId, tags.id))
+        .innerJoin(posts, eq(postTags.postId, posts.id))
+        .where(and(eq(posts.status, 'published'), isNull(posts.deletedAt)))
+        .groupBy(tags.id, tags.name, tags.slug)
+        .orderBy(desc(count()), asc(tags.name), asc(tags.id))
+        .limit(12)
+      const selectedTag = query.tag
+        ? popularTags.find(tag => tag.slug === query.tag) ?? (await tx.select({ id: tags.id, name: tags.name, slug: tags.slug })
+          .from(tags).where(eq(tags.slug, query.tag)).limit(1))[0] ?? null
+        : null
 
       return {
+        popularTags: popularTags.map(tag => ({ ...tag, postCount: Number(tag.postCount) })),
+        selectedTag,
         posts: items.map(item => ({
           ...item,
+          tags: tagRows.filter(tag => tag.postId === item.id).map(({ id, name, slug }) => ({ id, name, slug })),
           recipe: item.type === 'recipe' ? item.recipe : null,
           coverUrl: item.coverMediaId
             ? `/api/media/${item.coverMediaId}/file`

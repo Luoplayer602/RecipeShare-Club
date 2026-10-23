@@ -35,8 +35,9 @@ export default function Page() {
   const [notice, setNotice] = useState('')
   const [reopening, setReopening] = useState(false)
   const [pending, setPending] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
   const signup = mode === 'signup'
-  const busy = entering || switching || pending
+  const busy = entering || switching || pending || submitted
 
   useEffect(() => {
     if (!entering) return
@@ -60,6 +61,13 @@ export default function Page() {
     }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 880)
     return () => window.clearTimeout(timer)
   }, [switching, signup])
+
+  useEffect(() => {
+    if (!submitted) return
+    const timer = window.setTimeout(() => { router.replace('/home'); router.refresh() },
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1580)
+    return () => window.clearTimeout(timer)
+  }, [submitted, router])
 
   function switchMode() {
     if (busy) return
@@ -94,7 +102,7 @@ export default function Page() {
           return
         }
 
-        router.replace('/home')
+        setSubmitted(true)
       } catch {
         setNotice('Unable to reach the server. Please try again.')
       } finally {
@@ -176,7 +184,7 @@ export default function Page() {
   }
 
   return (
-    <main className={`login-stage${reopening ? ' is-reopening' : ''}${switching ? ' is-switching' : ''}${signup ? ' is-signup' : ''}`}>
+    <main className={`login-stage${submitted ? ' is-submitting' : ''}${reopening ? ' is-reopening' : ''}${switching ? ' is-switching' : ''}${signup ? ' is-signup' : ''}`}>
       <InteractiveAmbient className="ambient-one" />
       <InteractiveAmbient className="ambient-two" />
       <InteractiveAmbient className="ambient-three" />
@@ -184,7 +192,7 @@ export default function Page() {
       <InteractiveAmbient className="ambient-five" />
       <section className="login-shell" aria-label={signup ? 'Đăng ký' : 'Đăng nhập'}>
         <div className="brand-mark"><TrayMark /></div>
-        <div key={mode} className="login-card" aria-busy={switching || pending} inert={switching || pending}>
+        <div key={mode} className="login-card" aria-busy={switching || pending || submitted} inert={switching || pending || submitted}>
           <div className="card-heading">
             <p className="eyebrow">{signup ? 'JOIN THE CLUB' : 'WELCOME BACK'}</p>
             <h1>{signup ? 'Đăng ký' : 'Đăng nhập'}</h1>

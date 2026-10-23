@@ -1,6 +1,7 @@
-import { and, asc, eq, isNull } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
 import { db } from '@/db'
 import {
+  mediaAssets,
   posts,
   recipeDetails,
   recipeIngredients,
@@ -129,11 +130,19 @@ export async function GET(_request: Request, context: Context) {
         .where(eq(postTags.postId, postId))
         .orderBy(asc(tags.name), asc(tags.id))
 
+      const mediaIds = new Set<string>()
+      if (post.coverMediaId) mediaIds.add(post.coverMediaId)
+      for (const block of blocks) if ('mediaId' in block.data) mediaIds.add(block.data.mediaId)
+      const media = mediaIds.size ? await tx.select({ id: mediaAssets.id, kind: mediaAssets.kind,
+        source: mediaAssets.source, mimeType: mediaAssets.mimeType, url: mediaAssets.externalUrl,
+      }).from(mediaAssets).where(inArray(mediaAssets.id, [...mediaIds])) : []
+
       return {
         ...post,
         recipe,
         blocks,
         tags: postTagList,
+        media,
       }
     }, {
       isolationLevel: 'repeatable read',

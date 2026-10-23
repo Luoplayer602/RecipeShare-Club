@@ -34,6 +34,14 @@ const blockSchema = z.discriminatedUnion('type', [
     mediaId: z.uuid(),
     caption: z.string().trim().max(500).optional(),
   }),
+  z.strictObject({
+    type: z.literal('list'),
+    style: z.enum([
+      'disc', 'circle', 'square', 'decimal',
+      'lower-alpha', 'upper-alpha', 'lower-roman', 'upper-roman',
+    ]),
+    items: z.array(z.string().trim().min(1).max(500)).max(100),
+  }),
 ])
 
 const recipeSchema = z.strictObject({

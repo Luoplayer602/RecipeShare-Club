@@ -1,0 +1,9 @@
+.group { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; gap:16px; margin:24px 0; }
+.group[data-count='1'] { grid-template-columns:minmax(0,1fr); }
+.group .item { min-width:0; margin:0; }
+.group .item img { display:block; width:100%; height:auto; aspect-ratio:4/3; object-fit:cover; border-radius:14px; background:#f1ebe2; }
+.group[data-count='1'] .item img { aspect-ratio:auto; object-fit:contain; }
+.group[data-count='3'] .item:first-child { grid-column:1/-1; }
+.group[data-count='3'] .item:first-child img { aspect-ratio:2/1; }
+.group .item figcaption { margin:8px 2px 0; color:#91958d; font-size:11px; line-height:1.6; text-align:center; overflow-wrap:anywhere; }
+@media(max-width:520px) { .group { gap:10px; } .group .item img { border-radius:10px; } }

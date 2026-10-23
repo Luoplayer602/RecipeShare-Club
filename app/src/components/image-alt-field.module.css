@@ -1,0 +1,9 @@
+.field { margin-top:10px; font-size:9px; color:#a9a69b; }
+.field .toggle { display:flex; align-items:center; gap:3px; padding:3px 0; border:0; border-radius:6px; background:transparent; color:inherit; font:inherit; text-align:left; cursor:pointer; }
+.toggle svg { flex-shrink:0; transition:transform .3s ease; }
+.toggle[aria-expanded='true'] svg { transform:rotate(90deg); }
+.content { padding:7px 0 4px; }
+.field .content input { width:100%; border:1px solid #e7e2d8; border-radius:12px; padding:10px 12px; font:inherit; color:#657079; background:transparent; transition:border-color .25s,box-shadow .25s; }
+.field .content input:focus-visible { border-color:#c87952; box-shadow:0 0 0 3px #c8795212; }
+@media(max-width:760px) { .field .content input { font-size:16px; } }
+@media(prefers-reduced-motion:reduce) { .toggle svg,.field .content input { transition:none; } }

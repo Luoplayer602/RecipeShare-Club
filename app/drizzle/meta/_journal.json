@@ -29,6 +29,13 @@
       "when": 1792696526438,
       "tag": "0003_add_content_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1792729555287,
+      "tag": "0004_user_profiles",
+      "breakpoints": true
     }
   ]
 }

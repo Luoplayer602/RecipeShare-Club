@@ -1,10 +1,15 @@
 import 'server-only'
 
-import { and, eq, isNull, sql } from 'drizzle-orm'
+import { and, eq, isNull, or, sql } from 'drizzle-orm'
 import { db } from '@/db'
-import { posts, postBlocks } from '@/db/schema'
+import { posts, postBlocks, users, userProfiles } from '@/db/schema'
 
 export async function isMediaPublic(mediaId: string): Promise<boolean> {
+  const [profileReference] = await db.select({id:userProfiles.userId}).from(userProfiles)
+    .innerJoin(users,eq(users.id,userProfiles.userId))
+    .where(and(eq(users.status,'active'),or(eq(userProfiles.coverMediaId,mediaId),eq(userProfiles.avatarMediaId,mediaId)))).limit(1)
+  if (profileReference) return true
+
   const [coverReference] = await db
     .select({ id: posts.id })
     .from(posts)

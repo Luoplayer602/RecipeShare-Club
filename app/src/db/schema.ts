@@ -157,6 +157,15 @@ export const mediaAssets = mysqlTable(
   ],
 )
 
+export const userProfiles = mysqlTable('user_profiles', {
+  userId: varchar('user_id', { length: 36 }).primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  bio: varchar('bio', { length: 240 }).notNull().default(''),
+  location: varchar('location', { length: 80 }).notNull().default(''),
+  coverMediaId: varchar('cover_media_id', { length: 36 }).references(() => mediaAssets.id, { onDelete: 'restrict' }),
+  avatarMediaId: varchar('avatar_media_id', { length: 36 }).references(() => mediaAssets.id, { onDelete: 'restrict' }),
+  coverY: int('cover_y', { unsigned: true }).notNull().default(50),
+}, table => [check('user_profiles_cover_y_check', sql`${table.coverY} BETWEEN 0 AND 100`)])
+
 export const posts = mysqlTable(
   'posts',
   {
@@ -309,6 +318,12 @@ export type PostBlockData =
       type: 'video'
       mediaId: string
       caption?: string
+    }
+  | {
+      type: 'list'
+      style: 'disc' | 'circle' | 'square' | 'decimal'
+        | 'lower-alpha' | 'upper-alpha' | 'lower-roman' | 'upper-roman'
+      items: string[]
     }
 
 export const postBlocks = mysqlTable(

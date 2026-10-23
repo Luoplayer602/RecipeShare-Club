@@ -1,0 +1,24 @@
+.area { display:grid; align-items:center; justify-items:end; position:relative; }
+.guest,.member { grid-area:1 / 1; }
+.guest { justify-self:end; }
+.member { display:flex; align-items:center; gap:24px; }
+.create,.user { min-width:0; animation:arrive .85s .12s cubic-bezier(.22,.8,.3,1) both; }
+.user { animation-delay:.24s; }
+.area[data-authenticated='true'] .guest { pointer-events:none; animation:depart .55s cubic-bezier(.55,0,.8,.4) both; }
+@keyframes depart {
+  0% { opacity:1; transform:translateX(0) scale(1); visibility:visible; }
+  22% { opacity:1; transform:translateX(-10px) scale(.94,1.05); }
+  100% { opacity:0; transform:translateX(55vw) scale(1.07,.94); visibility:hidden; }
+}
+@keyframes arrive {
+  0% { opacity:0; transform:translateX(55vw) scale(.9,1.08); }
+  58% { opacity:1; transform:translateX(-13px) scale(1.055,.95); }
+  78% { transform:translateX(5px) scale(.98,1.025); }
+  92% { transform:translateX(-2px) scale(1.01,.99); }
+  100% { opacity:1; transform:translateX(0) scale(1); }
+}
+@media(max-width:760px) { .member { gap:10px; } }
+@media(prefers-reduced-motion:reduce) {
+  .create,.user { animation:none; }
+  .area[data-authenticated='true'] .guest { animation:none; visibility:hidden; }
+}

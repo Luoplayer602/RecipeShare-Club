@@ -1,0 +1,26 @@
+.root { position: relative; flex-shrink: 0; }
+.root .card { display: flex; align-items: center; gap: 11px; padding: 8px 11px 8px 14px; border: 1px solid #e5ded4; border-radius: 15px; background: #fffdf9; color: #26333b; text-align: left; box-shadow: 0 3px 12px #26333b05; transition: background .2s, border-color .2s; }
+.root .card:hover, .root .card[aria-expanded='true'] { background: #f1e9df; border-color: #dbc5af; }
+.name { font-size: 12px; font-weight: 700; }
+.name small { display: block; margin-top: 5px; font-size: 9px; color: #87908f; font-weight: 400; }
+.avatar { position: relative; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: #e8d9c7; color: #8c6040; border: 2px solid #fff; font-size: 13px; }
+.avatar i { position: absolute; right: -1px; bottom: -1px; width: 9px; height: 9px; border: 2px solid #fff; border-radius: 50%; background: #83a18b; }
+.panel { position: absolute; z-index: 30; right: 0; top: calc(100% + 12px); width: min(272px, calc(100vw - 28px)); padding: 13px; background: #fffdf9; border: 1px solid #e5ddd2; border-radius: 21px; box-shadow: 0 18px 55px #26333b25; transform-origin: top right; animation: open .48s cubic-bezier(.22,.85,.3,1) both; }
+.heading { padding: 8px 10px 16px; border-bottom: 1px solid #eee7dd; margin-bottom: 7px; }
+.heading span { display: block; color: #b47751; letter-spacing: .13em; font-size: 8px; }
+.heading strong { display: block; margin-top: 8px; font-size: 16px; }
+.panel button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 10px; border: 0; border-radius: 11px; background: transparent; color: #66716f; text-align: left; font-size: 12px; transition: background .2s; }
+.panel button:hover { background: #eee5d9; }
+.panel .logout { color: #b16a48; border-top: 1px solid #eee7dd; margin-top: 5px; }
+.notice { margin: 8px 10px; font-size: 11px; line-height: 1.7; color: #87908f; }
+.closing { animation: close .2s ease-in both; pointer-events: none; }
+@keyframes open { 0% { opacity: 0; transform: translate(5px,-8px) scale(.12); } 75% { opacity: 1; transform: translate(0,2px) scale(1.025); } 100% { opacity: 1; transform: translate(0,0) scale(1); } }
+@keyframes close { to { opacity: 0; transform: translate(5px,-8px) scale(.12); } }
+@media(max-width:760px) { .root .card { padding: 5px 7px; gap: 5px; } .name { display: none; } }
+@media(prefers-reduced-motion:reduce) { .panel, .closing { animation-duration: .01s; } }
+
+@media (min-width:761px) and (max-width:1200px) { .name { display:none; } }
+
+.heading small { display:block; margin-top:6px; color:#87908f; font-size:11px; overflow-wrap:anywhere; }
+
+.avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }

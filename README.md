@@ -1,6 +1,6 @@
 # RecipeShare Club
 
-Website chia sẻ công thức nấu ăn, đề 29. Hiện đã có nền Docker local, ứng dụng Next.js chính thức trong `app/` và cấu hình Drizzle cho MySQL. Chưa tạo schema nghiệp vụ, chạy migration hoặc triển khai API đăng nhập/đăng ký.
+Website chia sẻ công thức nấu ăn, đề 29. Hiện đã có nền Docker local, ứng dụng Next.js chính thức trong `app/` và cấu hình Drizzle cho MySQL. Đã tích hợp đăng nhập/đăng ký, bảng tin, editor, xuất bản và trang cá nhân với MySQL. Xem [checkpoint tích hợp](docs/integration-checkpoint.md) để biết phạm vi đã hoàn thành và các phần còn thiếu.
 
 ## Ứng dụng chính thức
 
@@ -9,10 +9,10 @@ Website chia sẻ công thức nấu ăn, đề 29. Hiện đã có nền Docker
 ```powershell
 cd app
 pnpm.cmd install
-pnpm.cmd dev --port 3001
+pnpm.cmd dev --port 3000
 ```
 
-Mở http://localhost:3001. Next.js hiện chạy trực tiếp trên Windows; chưa chạy trong Docker hoặc được Nginx reverse proxy.
+Mở http://localhost:3000. Next.js hiện chạy trực tiếp trên Windows; chưa chạy trong Docker hoặc được Nginx reverse proxy.
 
 Các thư viện đã cài: `drizzle-orm`, `mysql2`, `dotenv`, `drizzle-kit`. `app/pnpm-workspace.yaml` cho phép script build của `esbuild`.
 
@@ -36,7 +36,7 @@ MIGRATION_DB_USER=recipe_owner
 MIGRATION_DB_PASSWORD="<mat-khau-owner>"
 ```
 
-Hai file này được Git bỏ qua. `drizzle.config.ts` đọc thông tin migration và trỏ tới `src/db/schema.ts`; file schema chưa được tạo. Chưa chạy `generate` hoặc `migrate` ở mốc này. Tài khoản `recipe_app` cần được tạo riêng với quyền `SELECT, INSERT, UPDATE, DELETE` trên `recipeshare.*`; Compose chưa tự tạo tài khoản này. Tài khoản `recipe_owner` dùng quản lý schema, không dùng làm tài khoản runtime.
+Hai file này được Git bỏ qua. `drizzle.config.ts` đọc thông tin migration và trỏ tới `src/db/schema.ts`; schema và migration được lưu trong repository; migration mới nhất là `0004_user_profiles`. Sau khi cấu hình tài khoản migration, chạy `pnpm.cmd exec drizzle-kit migrate` trong `app/` để cập nhật database. Tài khoản `recipe_app` cần được tạo riêng với quyền `SELECT, INSERT, UPDATE, DELETE` trên `recipeshare.*`; Compose chưa tự tạo tài khoản này. Tài khoản `recipe_owner` dùng quản lý schema, không dùng làm tài khoản runtime.
 
 Kiểm tra mã nguồn trong thư mục `app/`:
 

@@ -1,6 +1,6 @@
 import { and, eq, inArray, isNull } from 'drizzle-orm'
 import { db } from '@/db'
-import { mediaAssets, posts, users } from '@/db/schema'
+import { mediaAssets, posts, users, userTitles } from '@/db/schema'
 import { postIdSchema } from '@/lib/posts/post-id'
 import { loadPostContent } from '@/lib/posts/load-content'
 
@@ -38,11 +38,13 @@ export async function GET(_request: Request, context: Context) {
             id: users.id,
             username: users.username,
             displayName: users.displayName,
+            titleName: userTitles.name,
             avatarUrl: users.avatarUrl,
           },
         })
         .from(posts)
         .innerJoin(users, eq(posts.authorId, users.id))
+        .innerJoin(userTitles, eq(users.titleId, userTitles.id))
         .where(and(
           eq(posts.id, parsedId.data),
           eq(posts.status, 'published'),

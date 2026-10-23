@@ -13,6 +13,9 @@ export const publishEditorSchema = saveEditorSchema
     const hasContent = input.blocks.some(block => {
       if (block.type === 'heading') return false
       if (block.type === 'paragraph') return block.text.trim().length > 0
+      if (block.type === 'list') {
+        return block.items.some(item => item.trim().length > 0)
+      }
 
       return block.type === 'image' || block.type === 'video'
     })
