@@ -7,7 +7,7 @@ import { Bookmark, Home, Users, UserRound } from 'lucide-react'
 import styles from './community-nav.module.css'
 
 type View = 'home' | 'saved' | 'following'
-export function CommunityNav({ active, savedCount, onSelect }: { active?: View; savedCount?: number; onSelect?: (view: View) => void }) {
+export function CommunityNav({ active, savedCount, onSelect, profileHref = '/profile' }: { active?: View; savedCount?: number; onSelect?: (view: View) => void; profileHref?: string }) {
   const marker = useRef<HTMLDivElement>(null)
   const transition = useRef<{ target: number; from: number; entering: boolean } | null>(null)
   const isProfile = usePathname().startsWith('/profile')
@@ -58,6 +58,6 @@ export function CommunityNav({ active, savedCount, onSelect }: { active?: View; 
         ? <button key={id} type="button" className={styles.item} aria-pressed={active === id} onClick={() => onSelect(id)} title={label}>{content}</button>
         : <Link key={id} className={styles.item} href={href} aria-current={active === id ? 'page' : undefined} title={label}>{content}</Link>
     })}
-    <Link className={styles.item} href="/profile" aria-current={isProfile ? 'page' : undefined} title="Trang cá nhân"><UserRound size={19} aria-hidden="true" /><span className={styles.label}>Trang cá nhân</span></Link>
+    <Link className={styles.item} href={profileHref} prefetch={false} aria-current={isProfile ? 'page' : undefined} title="Trang cá nhân"><UserRound size={19} aria-hidden="true" /><span className={styles.label}>Trang cá nhân</span></Link>
   </nav>
 }

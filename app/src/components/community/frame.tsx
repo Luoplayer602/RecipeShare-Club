@@ -37,7 +37,7 @@ export function StandaloneCommunityFrame({ user, children, active, onSelect, que
       <div className={styles.account}><AccountArea user={user} /></div>
     </header>
     <div className={styles.layout}>
-      <aside className={styles.sidebar}><CommunityNav active={active} onSelect={onSelect} /><div className={styles.sidebarNote}><Utensils size={25} /><p>Mỗi món ăn,<br />một câu chuyện.</p><small>Cùng nhau chia sẻ niềm vui vào bếp.</small></div></aside>
+      <aside className={styles.sidebar}><CommunityNav active={active} onSelect={onSelect} profileHref={user ? `/profile/${encodeURIComponent(user.username)}` : '/'} /><div className={styles.sidebarNote}><Utensils size={25} /><p>Mỗi món ăn,<br />một câu chuyện.</p><small>Cùng nhau chia sẻ niềm vui vào bếp.</small></div></aside>
       {children}
       <aside className={styles.rightPanel}>{rightPanel ?? <><div className={styles.community}><ChefHat size={36} /><p>CHÀO MỪNG ĐẾN VỚI CLUB</p><h2>Hôm nay,<br />bạn nấu món gì?</h2><p>Khám phá những công thức và câu chuyện từ cộng đồng yêu căn bếp.</p></div><small className={styles.demoNote}>RecipeShare Club<br />Nơi căn bếp kết nối những câu chuyện.</small></>}</aside>
     </div>

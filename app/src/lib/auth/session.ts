@@ -89,3 +89,22 @@ export async function deleteSession(): Promise<void> {
     maxAge: 0,
   })
 }
+
+/** Re-emit the validated session from a Server Action so Next clears auth-dependent UI caches. */
+export async function refreshSessionCookie(): Promise<boolean> {
+  const cookieStore = await cookies()
+  const token = cookieStore.get(COOKIE_NAME)?.value
+  if (!token || !isValidToken(token)) return false
+  const now = new Date()
+  const [session] = await db.select({ expiresAt: userSessions.expiresAt })
+    .from(userSessions)
+    .where(and(eq(userSessions.tokenHash, hashToken(token)), gt(userSessions.expiresAt, now)))
+    .limit(1)
+  if (!session) return false
+  cookieStore.set(COOKIE_NAME, token, {
+    ...cookieOptions,
+    expires: session.expiresAt,
+    maxAge: Math.max(0, Math.floor((session.expiresAt.getTime() - now.getTime()) / 1000)),
+  })
+  return true
+}

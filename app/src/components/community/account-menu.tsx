@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState, useTransition } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { ChevronDown, LogOut, Settings, UserRound } from 'lucide-react'
+import { logoutAction } from '@/lib/auth/actions'
 import type { SessionUser } from './types'
 import styles from './account-menu.module.css'
 
@@ -12,6 +13,7 @@ export function AccountMenu({ user }: { user: SessionUser }) {
   const [closing, setClosing] = useState(false)
   const [notice, setNotice] = useState('')
   const [pending, setPending] = useState(false)
+  const [, startTransition] = useTransition()
   const root = useRef<HTMLDivElement>(null)
   const trigger = useRef<HTMLButtonElement>(null)
   const first = useRef<HTMLButtonElement>(null)
@@ -30,15 +32,15 @@ export function AccountMenu({ user }: { user: SessionUser }) {
     document.addEventListener('keydown', keyboard)
     return () => { document.removeEventListener('pointerdown', outside); document.removeEventListener('keydown', keyboard) }
   }, [open])
-  async function logout() {
+  function logout() {
     if (pending) return
     setPending(true)
-    try {
-      const response = await fetch('/api/auth/logout', { method: 'POST' })
-      if (!response.ok) throw new Error()
-      router.replace('/home')
-      router.refresh()
-    } catch { setNotice('Không thể đăng xuất. Vui lòng thử lại.'); setPending(false) }
+    startTransition(async () => {
+      try {
+        const result = await logoutAction()
+        if (result?.error) { setNotice('Không thể đăng xuất. Vui lòng thử lại.'); setPending(false) }
+      } catch { setNotice('Không thể đăng xuất. Vui lòng thử lại.'); setPending(false) }
+    })
   }
   function toggle() {
     if (open) setClosing(true)
@@ -54,7 +56,7 @@ export function AccountMenu({ user }: { user: SessionUser }) {
       if (closing && event.target === event.currentTarget) { setOpen(false); setClosing(false) }
     }} inert={closing}>
       <div className={styles.heading}><span>GÓC RIÊNG CỦA BẠN</span><strong>Chào {user.displayName}</strong><small>@{user.username}</small></div>
-      <button ref={first} onClick={() => { setClosing(true); router.push('/profile') }}><UserRound size={17} />Trang cá nhân</button>
+      <button ref={first} onClick={() => { setClosing(true); router.push(`/profile/${encodeURIComponent(user.username)}`) }}><UserRound size={17} />Trang cá nhân</button>
       <button onClick={() => setNotice('Các tuỳ chọn cài đặt sẽ được bổ sung ở bước tiếp theo.')}><Settings size={17} />Cài đặt</button>
       <button className={styles.logout} disabled={pending} onClick={logout}><LogOut size={17} />{pending ? 'Đang đăng xuất…' : 'Đăng xuất'}</button>
       {notice && <p className={styles.notice} role="status">{notice}</p>}

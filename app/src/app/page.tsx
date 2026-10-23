@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import Image from 'next/image'
 import { LockKeyhole, Mail, UserRound } from 'lucide-react'
 import { InteractiveAmbient } from '@/components/interactive-ambient'
 import { SignupContact } from '@/components/signup-contact'
 import { PasswordToggle } from '@/components/password-toggle'
 import { AuthToast } from '@/components/auth-toast'
-import { useRouter } from 'next/navigation'
+import { completeLoginAction } from '@/lib/auth/actions'
 
 function TrayMark() {
   return (
@@ -23,7 +23,7 @@ function TrayMark() {
 }
 
 export default function Page() {
-  const router = useRouter()
+  const [navigating, startTransition] = useTransition()
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -37,7 +37,7 @@ export default function Page() {
   const [pending, setPending] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const signup = mode === 'signup'
-  const busy = entering || switching || pending || submitted
+  const busy = entering || switching || pending || submitted || navigating
 
   useEffect(() => {
     if (!entering) return
@@ -64,10 +64,22 @@ export default function Page() {
 
   useEffect(() => {
     if (!submitted) return
-    const timer = window.setTimeout(() => { router.replace('/home'); router.refresh() },
+    const timer = window.setTimeout(() => {
+      // A cached page can be reactivated after logout; never replay a past login.
+      setSubmitted(false)
+      setPassword('')
+      startTransition(async () => {
+        try {
+          const result = await completeLoginAction()
+          if (result?.error) setNotice('Phiên đăng nhập không còn hiệu lực. Hãy đăng nhập lại.')
+        } catch {
+          setNotice('Không thể mở trang chủ. Vui lòng thử lại.')
+        }
+      })
+    },
       window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1580)
     return () => window.clearTimeout(timer)
-  }, [submitted, router])
+  }, [submitted, startTransition])
 
   function switchMode() {
     if (busy) return
@@ -184,7 +196,7 @@ export default function Page() {
   }
 
   return (
-    <main className={`login-stage${submitted ? ' is-submitting' : ''}${reopening ? ' is-reopening' : ''}${switching ? ' is-switching' : ''}${signup ? ' is-signup' : ''}`}>
+    <main className={`login-stage${submitted || navigating ? ' is-submitting' : ''}${reopening ? ' is-reopening' : ''}${switching ? ' is-switching' : ''}${signup ? ' is-signup' : ''}`}>
       <InteractiveAmbient className="ambient-one" />
       <InteractiveAmbient className="ambient-two" />
       <InteractiveAmbient className="ambient-three" />
@@ -192,7 +204,7 @@ export default function Page() {
       <InteractiveAmbient className="ambient-five" />
       <section className="login-shell" aria-label={signup ? 'Đăng ký' : 'Đăng nhập'}>
         <div className="brand-mark"><TrayMark /></div>
-        <div key={mode} className="login-card" aria-busy={switching || pending || submitted} inert={switching || pending || submitted}>
+        <div key={mode} className="login-card" aria-busy={switching || pending || submitted || navigating} inert={switching || pending || submitted || navigating}>
           <div className="card-heading">
             <p className="eyebrow">{signup ? 'JOIN THE CLUB' : 'WELCOME BACK'}</p>
             <h1>{signup ? 'Đăng ký' : 'Đăng nhập'}</h1>
