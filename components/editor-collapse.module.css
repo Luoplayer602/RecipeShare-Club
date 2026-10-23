@@ -1,0 +1,5 @@
+.collapse { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .48s cubic-bezier(.25,.8,.25,1); }
+.inner { min-height: 0; overflow: hidden; opacity: 0; transform: translateY(10px); visibility: hidden; transition: opacity .2s ease, transform .3s ease, visibility 0s .48s; }
+.collapse[data-open='true'] { grid-template-rows: 1fr; }
+.collapse[data-open='true'] > .inner { opacity: 1; transform: translateY(0); visibility: visible; transition: opacity .3s ease .1s, transform .4s cubic-bezier(.2,.7,.3,1), visibility 0s; }
+@media(prefers-reduced-motion:reduce) { .collapse, .inner, .collapse[data-open='true'] > .inner { transition: none; } }

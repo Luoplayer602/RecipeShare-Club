@@ -1,0 +1,3 @@
+.image { opacity:0; transition:opacity .45s ease; }
+.image[data-loaded='true'] { opacity:1; }
+@media(prefers-reduced-motion:reduce) { .image { transition:none; } }

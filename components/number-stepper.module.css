@@ -1,0 +1,6 @@
+.stepper { display:flex; align-items:center; flex:1; min-width:0; }
+.stepper input { appearance:textfield; -moz-appearance:textfield; min-width:0; }
+.stepper input::-webkit-inner-spin-button, .stepper input::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+.arrows { display:grid; flex-shrink:0; padding-right:3px; }
+.arrows button { display:grid; place-items:center; width:19px; height:14px; padding:0; border:0; border-radius:4px; background:transparent; color:#aa7956; transition:background .2s, color .2s; }
+.arrows button:hover:enabled { color:#a25d38; background:#efe5d9; }
