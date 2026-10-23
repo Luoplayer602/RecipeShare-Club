@@ -1,3 +1,4 @@
+import { hasInvalidOrigin } from '@/lib/http/origin'
 import { and, count, eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { users, userFollows } from '@/db/schema'
@@ -7,7 +8,7 @@ import { profileUsername } from '@/lib/profiles/validation'
 const respond = (body: unknown, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'private, no-store' } })
 type Context = { params: Promise<{ username: string }> }
 async function handle(request: Request, context: Context, mutation?: 'follow' | 'remove') {
-  if (mutation && (request.headers.get('sec-fetch-site') === 'cross-site' || (request.headers.get('origin') !== null && request.headers.get('origin') !== new URL(request.url).origin))) return respond({ code: 'INVALID_ORIGIN' }, 403)
+  if (mutation && hasInvalidOrigin(request)) return respond({ code: 'INVALID_ORIGIN' }, 403)
   const parsed = profileUsername.safeParse((await context.params).username)
   if (!parsed.success) return respond({ code: 'INVALID_USERNAME' }, 400)
   try {

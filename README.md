@@ -12,7 +12,7 @@ pnpm.cmd install
 pnpm.cmd dev --port 3000
 ```
 
-Mở http://localhost:3000. Next.js hiện chạy trực tiếp trên Windows; chưa chạy trong Docker hoặc được Nginx reverse proxy.
+Mở http://localhost:8080 để sử dụng ứng dụng qua Nginx reverse proxy. Next.js vẫn chạy trực tiếp trên Windows ở cổng 3000 để giữ hot reload và debug; http://localhost:3000 vẫn dùng được khi cần kiểm tra trực tiếp. Xem [hướng dẫn reverse proxy](docs/nginx-development.md).
 
 Các thư viện đã cài: `drizzle-orm`, `mysql2`, `dotenv`, `drizzle-kit`. `app/pnpm-workspace.yaml` cho phép script build của `esbuild`.
 
@@ -58,22 +58,22 @@ docker compose ps
 
 Lệnh PowerShell trên chỉ áp dụng execution policy cho tiến trình chạy script, không đổi policy của máy. Script tạo `.env` và hai mật khẩu ngẫu nhiên trong `.secrets/`, không ghi đè file đã có. Các file này được Git bỏ qua. Compose secrets ở local là file mount, không phải kho secret mã hóa; chỉ chia sẻ file cấu hình mẫu.
 
-- Website tạm: http://localhost:8080
+- Ứng dụng qua Nginx: http://localhost:8080 (cần chạy Next.js ở cổng 3000).
 - Nginx liveness: http://localhost:8080/health/live (không kiểm tra DB).
 - phpMyAdmin: http://localhost:8081; server cố định là `mysql`.
 
 Đăng nhập phpMyAdmin bằng user `recipe_owner` (hoặc `MYSQL_USER` trong `.env`). Đọc mật khẩu tại máy cá nhân bằng `Get-Content .secrets/mysql_owner_password.txt`. User này quản lý riêng database `recipeshare`, không phải tài khoản runtime của ứng dụng. Root dùng cho quản trị trong container, không dùng đăng nhập web.
 
-Đổi cổng trong `.env` nếu 8080/8081 đã bị chiếm. MySQL publish `127.0.0.1:3307` tới cổng 3306 trong container để Next.js trên host kết nối. MySQL tham gia cả mạng `data` nội bộ và mạng `admin`. Tất cả cổng hiện bind localhost cho phát triển local.
+Đổi cổng trong `.env` nếu 8080/8081 đã bị chiếm. MySQL publish `127.0.0.1:3307` tới cổng 3306 trong container để Next.js trên host kết nối. MySQL tham gia cả mạng `data` nội bộ và mạng `admin`. Mặc định các cổng bind localhost cho phát triển local. Có thể đặt `WEB_BIND_ADDRESS` thành IP mạng của máy để thử Nginx trên điện thoại; MySQL và phpMyAdmin vẫn bind localhost.
 
 ## Phạm vi nền hiện tại
 
 - MySQL 8.4, database UTF-8, volume bền vững và healthcheck thực hiện `SELECT 1` bằng tài khoản có xác thực.
 - phpMyAdmin chỉ khởi động sau khi MySQL healthy; không cấu hình tự đăng nhập.
-- Nginx non-root, filesystem chỉ đọc, bỏ capabilities, security headers, trang tạm và healthcheck.
+- Nginx non-root, filesystem chỉ đọc, bỏ capabilities, security headers, reverse proxy tới Next.js trên host và healthcheck.
 - Mạng dữ liệu nội bộ; log Docker xoay vòng tối đa 3 file × 10 MB mỗi service.
 
-Nginx đang phục vụ trang tĩnh, **chưa làm reverse proxy**. Backend đã chọn Next.js API; sẽ nối upstream sau khi triển khai. Prometheus, Grafana, Loki và Promtail là các bước tiếp theo; chưa được coi là hoàn thành mốc 1 của đề.
+Nginx chuyển tiếp frontend và API tới `host.docker.internal:3000`, hỗ trợ streaming và WebSocket hot reload. Next.js chưa được đóng gói Docker. Prometheus, Grafana, Loki và Alloy là các bước tiếp theo; chưa được coi là hoàn thành toàn bộ phần hạ tầng của đề.
 
 Image được ghim tag phiên bản; chưa ghim digest. Nguồn cấu hình: [MySQL official image](https://hub.docker.com/_/mysql), [phpMyAdmin official image](https://hub.docker.com/_/phpmyadmin), [Nginx unprivileged](https://hub.docker.com/r/nginxinc/nginx-unprivileged).
 
@@ -95,3 +95,5 @@ Khi báo không kết nối được Docker Engine, mở Docker Desktop và đ�
 Đã kiểm tra trên Docker Desktop Linux containers ngày 20/10/2026: Compose hợp lệ; cả ba service chạy; Nginx và MySQL healthy; website, liveness và phpMyAdmin trả HTTP 200; Nginx chạy UID 101 và trả security headers; DB không publish cổng, mạng data là internal. Bảng kiểm thử giữ nguyên một dòng sau restart/recreate và đã được dọn. Chưa kiểm thử luồng nghiệp vụ hoặc đăng nhập phpMyAdmin qua trình duyệt.
 
 Cập nhật ngày 21/10/2026: đã kiểm tra Next.js trả HTTP 200 trên cổng 3001, đăng nhập phpMyAdmin, publish MySQL trên localhost:3307 và kết nối bằng Node.js/mysql2 với tài khoản `recipe_app`. Database nghiệp vụ vẫn trống. TypeScript và ESLint của `app/` kiểm tra thành công; chưa kiểm thử build production hoặc luồng xác thực.
+
+Cập nhật 24/10/2026: đã chuyển Nginx từ trang tĩnh sang reverse proxy cho Next.js chạy trên Windows. Kiểm tra DB/API và đăng nhập/đăng xuất qua trình duyệt ở cổng 8080 đã đạt; các kiểm tra lịch sử bên trên mô tả trạng thái tại thời điểm tương ứng.

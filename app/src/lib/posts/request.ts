@@ -8,15 +8,7 @@ type JsonBodyResult =
       code: string
     }
 
-export function hasInvalidOrigin(request: Request): boolean {
-  const origin = request.headers.get('origin')
-  const fetchSite = request.headers.get('sec-fetch-site')
-
-  return (
-    fetchSite === 'cross-site' ||
-    (origin !== null && origin !== new URL(request.url).origin)
-  )
-}
+export { hasInvalidOrigin } from '@/lib/http/origin'
 
 export async function readEditorJson(
   request: Request,

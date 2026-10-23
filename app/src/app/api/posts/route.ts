@@ -1,3 +1,4 @@
+import { hasInvalidOrigin } from '@/lib/http/origin'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import { db } from '@/db'
@@ -38,13 +39,7 @@ function respond(body: unknown, status: number) {
 }
 
 export async function POST(request: Request) {
-  const origin = request.headers.get('origin')
-  const fetchSite = request.headers.get('sec-fetch-site')
-
-  if (
-    fetchSite === 'cross-site' ||
-    (origin !== null && origin !== new URL(request.url).origin)
-  ) {
+  if (hasInvalidOrigin(request)) {
     return respond({ code: 'INVALID_ORIGIN' }, 403)
   }
 

@@ -1,3 +1,4 @@
+import { hasInvalidOrigin } from '@/lib/http/origin'
 import { and, eq, isNull } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
@@ -7,7 +8,7 @@ import { getSessionUser } from '@/lib/auth/session'
 const respond = (body: unknown, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } })
 type Context = { params: Promise<{ id: string }> }
 async function handle(request: Request, context: Context, mutation?: 'save' | 'remove') {
-  if (mutation && (request.headers.get('sec-fetch-site') === 'cross-site' || (request.headers.get('origin') !== null && request.headers.get('origin') !== new URL(request.url).origin))) return respond({ code: 'INVALID_ORIGIN' }, 403)
+  if (mutation && hasInvalidOrigin(request)) return respond({ code: 'INVALID_ORIGIN' }, 403)
   const { id } = await context.params
   if (!z.uuid().safeParse(id).success) return respond({ code: 'INVALID_ID' }, 400)
   try {

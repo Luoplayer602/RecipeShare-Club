@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict'
+import { hasInvalidOrigin } from '../src/lib/http/origin.ts'
+const check=(headers,url='http://localhost:3000/api/posts')=>hasInvalidOrigin(new Request(url,{headers}))
+assert.equal(check({Origin:'http://localhost:3000'}),false)
+assert.equal(check({Host:'localhost:8080',Origin:'http://localhost:8080'}),false)
+assert.equal(check({Host:'100.97.129.20:8080',Origin:'http://100.97.129.20:8080'}),false)
+assert.equal(check({Host:'[::1]:8080',Origin:'http://[::1]:8080'}),false)
+assert.equal(check({Host:'localhost:8080',Origin:'https://localhost:8080'},'https://localhost:3000/api/posts'),false)
+assert.equal(check({Host:'localhost:8080',Origin:'http://localhost:3000'}),true)
+assert.equal(check({Host:'localhost:8080',Origin:'https://localhost:8080'}),true)
+assert.equal(check({Host:'localhost:8080',Origin:'http://evil.invalid','X-Forwarded-Host':'evil.invalid'}),true)
+assert.equal(check({Host:'localhost:8080',Origin:'http://localhost:8080','Sec-Fetch-Site':'cross-site'}),true)
+assert.equal(check({Host:'localhost:8080',Origin:'null'}),true)
+assert.equal(check({Host:'localhost:8080@evil.invalid',Origin:'http://evil.invalid'}),true)
+assert.equal(check({Host:'localhost:8080'}),false)
+console.log('PASS: direct/proxy/IPv6 origins, port/protocol isolation, cross-site and forwarded-host spoof rejection.')
