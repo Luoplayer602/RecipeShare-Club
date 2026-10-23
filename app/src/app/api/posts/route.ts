@@ -16,6 +16,7 @@ import {
 } from 'drizzle-orm'
 
 import {
+  userFollows,
   savedPosts,
   mediaAssets,
   posts,
@@ -186,15 +187,17 @@ export async function GET(request: Request) {
   const query = parsed.data
 
   try {
-    const viewer = query.saved ? await getSessionUser() : null
-    if (query.saved && !viewer) return respond({ code: 'UNAUTHENTICATED' }, 401)
+    const viewer = query.saved || query.following ? await getSessionUser() : null
+    if ((query.saved || query.following) && !viewer) return respond({ code: 'UNAUTHENTICATED' }, 401)
     const result = await db.transaction(async tx => {
       const conditions = [
         eq(posts.status, 'published'),
         isNull(posts.deletedAt),
       ]
 
-      if (viewer) conditions.push(exists(tx.select({ id: savedPosts.postId }).from(savedPosts).where(and(eq(savedPosts.postId, posts.id), eq(savedPosts.userId, viewer.id)))))
+      if (viewer && query.saved) conditions.push(exists(tx.select({ id: savedPosts.postId }).from(savedPosts).where(and(eq(savedPosts.postId, posts.id), eq(savedPosts.userId, viewer.id)))))
+      const followingScope = viewer && query.following ? exists(tx.select({ id: userFollows.authorId }).from(userFollows).innerJoin(users, eq(userFollows.authorId, users.id)).where(and(eq(userFollows.followerId, viewer.id), eq(userFollows.authorId, posts.authorId), eq(users.status, 'active')))) : undefined
+      if (followingScope) conditions.push(followingScope)
       if (query.type) {
         conditions.push(eq(posts.type, query.type))
       }
@@ -202,7 +205,7 @@ export async function GET(request: Request) {
       if (query.q) {
         // Parameterized literal substring search.
         conditions.push(
-          sql`LOCATE(${query.q}, ${posts.title}) > 0`,
+          query.following ? sql`(LOCATE(${query.q}, ${posts.title}) > 0 OR EXISTS (SELECT 1 FROM users WHERE users.id = ${posts.authorId} AND (LOCATE(${query.q}, users.display_name) > 0 OR LOCATE(${query.q}, users.username) > 0)) OR EXISTS (SELECT 1 FROM post_tags INNER JOIN tags ON tags.id = post_tags.tag_id WHERE post_tags.post_id = ${posts.id} AND LOCATE(${query.q}, tags.name) > 0))` : sql`LOCATE(${query.q}, ${posts.title}) > 0`,
         )
       }
 
@@ -254,7 +257,7 @@ export async function GET(request: Request) {
         .innerJoin(userTitles, eq(users.titleId, userTitles.id))
         .leftJoin(recipeDetails, eq(recipeDetails.postId, posts.id))
         .where(filter)
-        .orderBy(...(viewer ? [desc(sql`(SELECT created_at FROM saved_posts WHERE user_id = ${viewer.id} AND post_id = ${posts.id})`), desc(posts.id)] : [desc(posts.publishedAt), desc(posts.id)]))
+        .orderBy(...(viewer && query.saved ? [desc(sql`(SELECT created_at FROM saved_posts WHERE user_id = ${viewer.id} AND post_id = ${posts.id})`), desc(posts.id)] : [desc(posts.publishedAt), desc(posts.id)]))
         .limit(query.limit)
         .offset((query.page - 1) * query.limit)
 
@@ -268,7 +271,7 @@ export async function GET(request: Request) {
         .from(tags)
         .innerJoin(postTags, eq(postTags.tagId, tags.id))
         .innerJoin(posts, eq(postTags.postId, posts.id))
-        .where(and(eq(posts.status, 'published'), isNull(posts.deletedAt), viewer ? exists(tx.select({ id: savedPosts.postId }).from(savedPosts).where(and(eq(savedPosts.postId, posts.id), eq(savedPosts.userId, viewer.id)))) : undefined))
+        .where(and(eq(posts.status, 'published'), isNull(posts.deletedAt), followingScope, viewer && query.saved ? exists(tx.select({ id: savedPosts.postId }).from(savedPosts).where(and(eq(savedPosts.postId, posts.id), eq(savedPosts.userId, viewer.id)))) : undefined))
         .groupBy(tags.id, tags.name, tags.slug)
         .orderBy(desc(count()), asc(tags.name), asc(tags.id))
         .limit(12)

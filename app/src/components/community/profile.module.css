@@ -110,3 +110,11 @@
 .draftPages button { border:1px solid #e4ddd3; background:#fffdf9; color:#a1714c; padding:10px; border-radius:10px; }
 
 .results { min-width:0; overflow-anchor:none; }
+
+.actions { display:flex; flex-direction:column; align-items:flex-end; gap:12px; min-width:0; max-width:45%; flex-shrink:1; }
+@media(max-width:760px) { .identity > .actions { flex-basis:100%; max-width:100%; margin:10px 0 0; padding-top:0; align-items:flex-start; } }
+
+.socialStats { display:flex; flex-wrap:wrap; gap:24px 40px; margin:20px 0; padding:18px 0; border-block:1px solid #eee6db; }
+.socialStats > div { display:flex; flex-direction:column; gap:6px; }
+.socialStats strong { color:#26333b; font-size:25px; line-height:1.2; font-weight:600; }
+.socialStats span { font-size:12px; color:#8b8e86; }

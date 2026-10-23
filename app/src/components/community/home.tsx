@@ -8,6 +8,7 @@ import { PaginatedPosts } from './paginated-posts'
 import { CommunityFrame, type CommunityView } from './frame'
 import type { PostList, SessionUser } from './types'
 import styles from './shell.module.css'
+import { FollowingContent } from './following-content'
 import { TagFilter } from './tag-filter'
 
 type Filters = { q: string; type: string; tag: string; pinned: string[]; page: number; view: CommunityView }
@@ -77,7 +78,7 @@ export function CommunityHome({ user }: { user: SessionUser | null }) {
   }, [filters.view])
   return <CommunityFrame user={user} active={ready ? filters.view : undefined} query={filters.q} onQuery={q => select({ q })} onSelect={view => select({ ...initial, view })}>
     <main ref={feed} className={styles.feed}>
-      {filters.view === 'following' || (filters.view === 'saved' && !user) ? <div className={styles.empty}><h1>{filters.view === 'saved' ? 'Bài viết đã lưu' : 'Đang theo dõi'}</h1><p>{user ? 'Chức năng này sẽ sớm có mặt.' : 'Đăng nhập để lưu bài và theo dõi tác giả.'}</p>{!user && <Link className={styles.createButton} href="/">Đăng nhập</Link>}</div> : <>
+      {filters.view === 'following' && user ? <FollowingContent query={filters.q} clearQuery={() => select({ q: '' })} /> : filters.view !== 'home' && !user ? <div className={styles.empty}><h1>{filters.view === 'saved' ? 'Bài viết đã lưu' : 'Đang theo dõi'}</h1><p>{user ? 'Chức năng này sẽ sớm có mặt.' : 'Đăng nhập để lưu bài và theo dõi tác giả.'}</p>{!user && <Link className={styles.createButton} href="/">Đăng nhập</Link>}</div> : <>
         <div className={styles.welcome} key={filters.view}><p>{filters.view === 'saved' ? 'GIỮ LẠI CẢM HỨNG VÀO BẾP' : 'CHÀO BẠN, MỪNG BẠN GHÉ BẾP'}</p><h1>{filters.view === 'saved' ? <>Món ngon đã lưu,<br /><em>để dành hôm nào nấu.</em></> : <>Một chút cảm hứng,<br /><em>một bữa ăn ngon.</em></>}</h1><span>{filters.view === 'saved' ? 'Những công thức và câu chuyện bạn yêu thích, xếp theo lần lưu gần nhất.' : 'Khám phá công thức và câu chuyện từ cộng đồng yêu nấu ăn.'}</span></div>
         {filters.view !== 'saved' && <nav className={styles.categories} aria-label="Lọc loại bài">{[['', 'Dành cho bạn'], ['recipe', 'Công thức'], ['blog', 'Chuyện trong bếp']].map(([type, label]) => <button key={type} aria-pressed={filters.type === type} onClick={() => select({ type })}>{label}</button>)}</nav>}
         <TagFilter catalog={catalog} selectedTags={result?.selectedTags ?? (result?.selectedTag ? [result.selectedTag] : [])} current={filters.tag} pinned={filters.pinned} onChange={(tag, pinned) => select({ tag, pinned })} />

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, ArrowUpRight, BookOpen, Camera, Check, ChefHat, FileText, MapPin, Pencil, Search, SlidersHorizontal, X } from 'lucide-react'
+import { FollowAuthor } from './follow-author'
 import { CommunityFrame } from './frame'
 import { CreatePost } from './create-post'
 import { PaginatedPosts } from './paginated-posts'
@@ -17,7 +18,7 @@ import styles from './profile.module.css'
 type FormProfile = { name:string; username:string; title:string; bio:string; location:string; avatar:string; cover:string; coverY:number; coverMediaId:string|null; avatarMediaId:string|null }
 type ProfileData = {
   own:boolean; profile:{id:string;username:string;displayName:string;titleName:string;bio:string;location:string;avatarUrl:string|null;coverUrl:string|null;coverMediaId:string|null;avatarMediaId:string|null;coverY:number};
-  stats:{publishedCount:number;draftCount:number|null};
+  stats:{publishedCount:number;draftCount:number|null;followerCount:number;followingCount:number};
   items:(Omit<PostSummary,'publishedAt'> & {publishedAt:string|null;updatedAt:string})[];pagination:PostList['pagination'];
 }
 const blank:FormProfile = {name:'',username:'',title:'',bio:'',location:'',avatar:'',cover:'',coverY:50,coverMediaId:null,avatarMediaId:null}
@@ -68,6 +69,15 @@ export function ProfilePage({ username, viewer }: {username:string;viewer:Sessio
     return()=>{clearTimeout(timer);controller.abort()}
   },[username,tab,page,query,reload])
   useEffect(()=>{if(!notice)return;const timer=setTimeout(()=>setNotice(''),5000);return()=>clearTimeout(timer)},[notice])
+  useEffect(() => {
+    function sync(event: Event) {
+      const detail = (event as CustomEvent<{ username:string;status:{followerCount:number;followingCount:number} }>).detail
+      if (detail.username.toLowerCase() === username.toLowerCase()) { setData(current => current ? { ...current, stats:{ ...current.stats, followerCount:detail.status.followerCount, followingCount:detail.status.followingCount } } : current); setReload(value => value + 1) }
+      else if (own) setReload(value => value + 1)
+    }
+    window.addEventListener('follow-changed', sync)
+    return () => window.removeEventListener('follow-changed', sync)
+  }, [username, own])
   async function saveProfile(value:FormProfile) {
     await api('/api/profile',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({displayName:value.name,bio:value.bio,location:value.location,coverMediaId:value.coverMediaId,avatarMediaId:value.avatarMediaId,coverY:value.coverY})})
     setData(current=>current?{...current,profile:{...current.profile,displayName:value.name,bio:value.bio,location:value.location,coverMediaId:value.coverMediaId,avatarMediaId:value.avatarMediaId,coverUrl:value.cover||null,avatarUrl:value.avatar||null,coverY:value.coverY}}:current)
@@ -105,9 +115,9 @@ export function ProfilePage({ username, viewer }: {username:string;viewer:Sessio
           <div className={styles.identity}>
             <div className={styles.avatar}>{profile.avatar ? <FadeImage src={profile.avatar} alt={`Ảnh đại diện của ${profile.name}`} /> : <span>{profile.name.slice(0,1).toUpperCase()}</span>}{own && <label className={styles.avatarUpload} title="Đổi ảnh đại diện"><Camera size={15} /><input type="file" disabled={busy} aria-label="Đổi ảnh đại diện" accept="image/jpeg,image/png,image/webp" onChange={event => { void upload(event.target.files?.[0],true); event.target.value = '' }} /></label>}</div>
             <div className={styles.name}><span className={styles.rank}><ChefHat size={12} />{profile.title}</span><h1>{profile.name}</h1><span className={styles.username}>@{profile.username}</span></div>
-            <div className={styles.actions}>{own ? <button className={styles.secondary} disabled={busy} onClick={openEdit}><Pencil size={14} />Sửa hồ sơ</button> : null}</div>
+            <div className={styles.actions}><FollowAuthor key={viewer?.id ?? 'guest'} username={username} />{own ? <button className={styles.secondary} disabled={busy} onClick={openEdit}><Pencil size={14} />Sửa hồ sơ</button> : null}</div>
           </div>
-          <div className={styles.about}><p>{profile.bio || 'Câu chuyện từ căn bếp này đang được viết tiếp.'}</p><div className={styles.details}>{profile.location && <span><MapPin size={13} />{profile.location}</span>}{own && <span><strong>{data!.stats.draftCount ?? 0}</strong> bản nháp</span>}</div></div>
+          <div className={styles.about}><p>{profile.bio || 'Câu chuyện từ căn bếp này đang được viết tiếp.'}</p><div className={styles.socialStats} aria-label="Thống kê theo dõi" aria-live="polite"><div><strong>{data.stats.followerCount.toLocaleString('vi-VN')}</strong>{' '}<span>người theo dõi</span></div><div><strong>{data.stats.followingCount.toLocaleString('vi-VN')}</strong>{' '}<span>đang theo dõi</span></div></div><div className={styles.details}>{profile.location && <span><MapPin size={13} />{profile.location}</span>}{own && <span><strong>{data!.stats.draftCount ?? 0}</strong> bản nháp</span>}</div></div>
         </section>
         <div className={styles.contentHeader}><nav className={styles.tabs} aria-label="Nội dung trang cá nhân" data-tab={tab} data-single={!own}><span className={styles.tabMarker} aria-hidden="true" /><button aria-pressed={tab === 'posts'} onClick={() => selectTab('posts')}><BookOpen size={15} />Bài viết<small>{data!.stats.publishedCount}</small></button>{own && <button aria-pressed={tab === 'drafts'} onClick={() => selectTab('drafts')}><FileText size={15} />Bản nháp<small>{data!.stats.draftCount ?? 0}</small></button>}</nav>{own && <CreatePost />}</div>
         <section className={styles.tabContent} aria-label={tab === 'posts' ? 'Bài viết đã xuất bản' : 'Bản nháp'}>

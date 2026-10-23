@@ -14,6 +14,7 @@ export const listPostsQuerySchema = z.strictObject({
     .default(20),
 
   saved: z.literal('1').optional(),
+  following: z.literal('1').optional(),
 
   type: z.enum(['recipe', 'blog']).optional(),
 
@@ -29,7 +30,7 @@ export const listPostsQuerySchema = z.strictObject({
     .min(1)
     .max(80)
     .optional(),
-})
+}).refine(value => !(value.saved && value.following), { message: 'Choose one collection.' })
 
 export type ListPostsQuery =
   z.infer<typeof listPostsQuerySchema>

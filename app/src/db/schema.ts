@@ -468,3 +468,9 @@ export const savedPosts = mysqlTable('saved_posts', {
   postId: varchar('post_id', { length: 36 }).notNull().references(() => posts.id, { onDelete: 'cascade' }),
   createdAt: datetime('created_at', { mode: 'date', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
 }, table => [primaryKey({ columns: [table.userId, table.postId] }), index('saved_posts_user_created_idx').on(table.userId, table.createdAt, table.postId)])
+
+export const userFollows = mysqlTable('user_follows', {
+  followerId: varchar('follower_id', { length: 36 }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+  authorId: varchar('author_id', { length: 36 }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: datetime('created_at', { mode: 'date', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+}, table => [primaryKey({ columns: [table.followerId, table.authorId] }), index('user_follows_author_idx').on(table.authorId), index('user_follows_recent_idx').on(table.followerId, table.createdAt, table.authorId), check('user_follows_not_self', sql`${table.followerId} <> ${table.authorId}`)])

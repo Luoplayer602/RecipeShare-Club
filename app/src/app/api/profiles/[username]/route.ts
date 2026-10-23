@@ -1,6 +1,6 @@
 import { and, asc, count, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { db } from '@/db'
-import { users, userTitles, userProfiles, posts, recipeDetails, postTags, tags } from '@/db/schema'
+import { userFollows, users, userTitles, userProfiles, posts, recipeDetails, postTags, tags } from '@/db/schema'
 import { getSessionUser } from '@/lib/auth/session'
 import { profileUsername, profileQuery } from '@/lib/profiles/validation'
 const headers = { 'Cache-Control': 'private, no-store' }
@@ -22,6 +22,8 @@ export async function GET(request: Request, context: { params: Promise<{ usernam
       const stats = await tx.select({ status:posts.status, total:count() }).from(posts).where(scope).groupBy(posts.status)
       const publishedCount = Number(stats.find(row=>row.status==='published')?.total ?? 0)
       const draftCount = own ? Number(stats.find(row=>row.status==='draft')?.total ?? 0) : null
+      const [followers] = await tx.select({ total:count() }).from(userFollows).innerJoin(users,eq(userFollows.followerId,users.id)).where(and(eq(userFollows.authorId,profile.id),eq(users.status,'active')))
+      const [following] = await tx.select({ total:count() }).from(userFollows).innerJoin(users,eq(userFollows.authorId,users.id)).where(and(eq(userFollows.followerId,profile.id),eq(users.status,'active')))
       const filter = and(scope,eq(posts.status,query.data.tab==='drafts'?'draft':'published'),query.data.q ? sql`LOCATE(${query.data.q}, ${posts.title}) > 0` : undefined)
       const [total] = await tx.select({ value:count() }).from(posts).where(filter)
       const items = await tx.select({ id:posts.id, type:posts.type, title:posts.title, slug:posts.slug, excerpt:posts.excerpt,
@@ -33,7 +35,7 @@ export async function GET(request: Request, context: { params: Promise<{ usernam
         .innerJoin(tags,eq(tags.id,postTags.tagId)).where(inArray(postTags.postId,items.map(item=>item.id))).orderBy(asc(tags.name)) : []
       const countValue = Number(total.value)
       return { status:200, body:{ own, profile:{...profile,bio:profile.bio??'',location:profile.location??'',coverY:profile.coverY??50,coverUrl:profile.coverMediaId?`/api/media/${profile.coverMediaId}/file`:null},
-        stats:{publishedCount,draftCount}, items:items.map(item=>({...item,recipe:item.type==='recipe'?item.recipe:null,
+        stats:{publishedCount,draftCount,followerCount:Number(followers.total),followingCount:Number(following.total)}, items:items.map(item=>({...item,recipe:item.type==='recipe'?item.recipe:null,
           coverUrl:item.coverMediaId?`/api/media/${item.coverMediaId}/file`:null,
           author:{id:profile.id,username:profile.username,displayName:profile.displayName,titleName:profile.titleName,avatarUrl:profile.avatarUrl},
           tags:tagRows.filter(tag=>tag.postId===item.id).map(({id,name,slug})=>({id,name,slug})),

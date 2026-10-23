@@ -99,3 +99,20 @@ Validation: full ESLint/build passed. The regression browser test passed against
 - Chia sẻ dùng AuthToast có sẵn, tự ẩn sau 4.5 giây, hiển thị lại khi nhấn tiếp; không thêm dòng vào nội dung bài.
 - Avatar và tên tác giả dẫn đến `/profile/[username]`, hỗ trợ ảnh đại diện thật, hover/focus.
 - TypeScript/lint đạt; Chrome 1440px và 390px đạt: khoảng cách hai nút, popup cố định không dịch nội dung, tự ẩn, liên kết hồ sơ tác giả, không tràn ngang/không lỗi JavaScript.
+
+### Theo dõi tác giả (tích hợp bản chính)
+- Migration `0006_user_follows` đã áp dụng ở database phát triển: khóa kép follower/author, FK cascade, index và CHECK cấm tự theo dõi.
+- `GET/PUT/DELETE /api/profiles/[username]/follow`: trạng thái và số lượt thật; mutation yêu cầu phiên, kiểm tra origin, không tự theo dõi, thao tác idempotent. Trang cá nhân dùng chung FollowAuthor, hiển thị số người theo dõi/đang theo dõi; khách có liên kết đăng nhập.
+- `GET /api/following`: danh sách riêng theo tài khoản, tìm theo tên/username, 5 bếp/trang, gợi ý tối đa 6 tác giả active có bài published, loại chính mình và các bếp đã theo dõi.
+- `GET /api/posts?following=1`: chỉ bài published chưa xóa từ bếp active đã theo dõi, sắp theo publishedAt/id mới nhất trước, tìm theo tiêu đề/tác giả/nhãn, phân trang. Không cho kết hợp saved và following trong một request.
+- Chuyển giao diện demo đã duyệt sang bản chính: bảng danh sách bếp đóng/mở, mở hồ sơ/bỏ theo dõi, feed 10 bài/trang, gợi ý bếp; giữ danh sách cũ khi tải và tự quay về trang hợp lệ khi bỏ theo dõi hết bài ở trang cuối. Sửa nhóm nút/bộ đếm trên profile mobile để không bị cắt ở cạnh phải.
+- TypeScript/lint/production build đạt (hai cảnh báo tracing media cũ). `node scripts/test-following.mjs` và hồi quy saved-posts đạt: quyền, origin, tự/trùng theo dõi, tách tài khoản, tìm/phân trang danh sách, thứ tự feed, loại draft và tài khoản suspended.
+- Chrome 1440px/390px đạt: từ bài đọc mở profile, theo dõi và tăng bộ đếm, vào feed, mở/đóng danh sách bếp, phân trang bài viết, bỏ theo dõi trên trang cuối trở về trạng thái trống, không lỗi JavaScript, nút profile mobile nằm trong viewport. Fixture được dọn sau mỗi lượt.
+- Làm rõ bộ đếm profile thành hai cột số lớn; thêm followerCount thật vào danh sách/gợi ý bếp. API kiểm tra chỉ đếm follower active và fixture xác nhận mỗi bếp có đúng một lượt theo dõi.
+- Đưa thống kê người theo dõi/đang theo dõi thành khu vực riêng dưới bio trong hồ sơ (cả chủ hồ sơ lẫn người xem); số liệu trả trực tiếp cùng API profile, cập nhật qua sự kiện theo dõi, bỏ hiển thị trùng trong cụm nút hành động.
+
+### Tự rà soát trước khi commit theo dõi
+- Đã sửa request trạng thái thừa trên mỗi thẻ bếp: dùng trạng thái đã biết từ directory; chỉ đọc lại khi focus/retry, và chỉ đồng bộ sự kiện liên quan cùng tác giả.
+- Đánh số phiên request trạng thái để GET cũ không ghi đè follow/unfollow vừa hoàn tất; vô hiệu hóa GET đang chờ khi mutation/sự kiện mới xuất hiện. Profile refetch sau mutation để hủy snapshot bộ đếm cũ.
+- Chrome kiểm thử giữ GET cũ, thực hiện follow rồi trả GET cũ: trạng thái mới được giữ. Kiểm tra API theo dõi và hồi quy saved-posts, TypeScript, lint, production build đều đạt; kiểm thử desktop/mobile 390px đạt. Không còn lỗi chặn commit được phát hiện trong phạm vi này.
+- Giới hạn hiện tại: kiểm thử mobile bằng Chrome; Safari iPhone thực tế chưa được xác minh lại. Hai cảnh báo tracing media có sẵn vẫn để xử lý ở bước đóng gói triển khai.

@@ -43,6 +43,13 @@
       "when": 1792760551064,
       "tag": "0005_saved_posts",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1792763309195,
+      "tag": "0006_user_follows",
+      "breakpoints": true
     }
   ]
 }
