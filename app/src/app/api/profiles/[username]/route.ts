@@ -12,7 +12,7 @@ export async function GET(request: Request, context: { params: Promise<{ usernam
     const viewer = await getSessionUser()
     const result = await db.transaction(async tx => {
       const [profile] = await tx.select({ id:users.id, username:users.username, displayName:users.displayName, titleName:userTitles.name,
-        avatarUrl:users.avatarUrl, bio:userProfiles.bio, location:userProfiles.location, coverMediaId:userProfiles.coverMediaId, avatarMediaId:userProfiles.avatarMediaId, coverY:userProfiles.coverY,
+        avatarUrl:users.avatarUrl, bio:userProfiles.bio, location:userProfiles.location, coverMediaId:userProfiles.coverMediaId, avatarMediaId:userProfiles.avatarMediaId, coverY:userProfiles.coverY,imageEdits:userProfiles.imageEdits,
       }).from(users).innerJoin(userTitles,eq(users.titleId,userTitles.id)).leftJoin(userProfiles,eq(userProfiles.userId,users.id))
         .where(and(eq(users.username,username.data),eq(users.status,'active'))).limit(1)
       if (!profile) return { status:404, body:{code:'PROFILE_NOT_FOUND'} }
@@ -34,7 +34,7 @@ export async function GET(request: Request, context: { params: Promise<{ usernam
       const tagRows = items.length ? await tx.select({postId:postTags.postId,id:tags.id,name:tags.name,slug:tags.slug}).from(postTags)
         .innerJoin(tags,eq(tags.id,postTags.tagId)).where(inArray(postTags.postId,items.map(item=>item.id))).orderBy(asc(tags.name)) : []
       const countValue = Number(total.value)
-      return { status:200, body:{ own, profile:{...profile,bio:profile.bio??'',location:profile.location??'',coverY:profile.coverY??50,coverUrl:profile.coverMediaId?`/api/media/${profile.coverMediaId}/file`:null},
+      return { status:200, body:{ own, profile:{...profile,imageEdits:own?profile.imageEdits:undefined,bio:profile.bio??'',location:profile.location??'',coverY:profile.coverY??50,coverUrl:profile.coverMediaId?`/api/media/${profile.coverMediaId}/file`:null},
         stats:{publishedCount,draftCount,followerCount:Number(followers.total),followingCount:Number(following.total)}, items:items.map(item=>({...item,recipe:item.type==='recipe'?item.recipe:null,
           coverUrl:item.coverMediaId?`/api/media/${item.coverMediaId}/file`:null,
           author:{id:profile.id,username:profile.username,displayName:profile.displayName,titleName:profile.titleName,avatarUrl:profile.avatarUrl},

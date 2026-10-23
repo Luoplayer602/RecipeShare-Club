@@ -1,0 +1,4 @@
+.menu { position:fixed; z-index:100; width:216px; padding:6px; border:1px solid #e6dccf; border-radius:16px; background:#fffdf9; box-shadow:0 12px 40px #26333b24; animation:photo-menu-in .22s cubic-bezier(.2,.8,.3,1); }
+.menu button { display:flex; align-items:center; gap:10px; width:100%; min-height:44px; padding:10px 12px; border:0; border-radius:10px; background:none; color:#6f6254; text-align:left; font:12px Arial,sans-serif; cursor:pointer; }.menu button:hover,.menu button:focus-visible { background:#f3eade; outline:none; color:#ac6946; }.menu button:disabled { opacity:.4; cursor:default; }
+@keyframes photo-menu-in { from { opacity:0;transform:translateY(-6px) scale(.97); } to { opacity:1;transform:none; } }
+@media(prefers-reduced-motion:reduce) { .menu { animation:none; } }

@@ -1,0 +1,13 @@
+.trigger { display:grid; place-items:center; width:40px; height:40px; border:1px solid #e7dfd4; border-radius:13px; background:#fffdf9ed; color:#8f7966; box-shadow:0 3px 12px #40302009; transition:background .2s,transform .2s; }
+.trigger:hover { background:#f3e7d7; }.trigger:active { transform:scale(.94); }
+.menu { position:fixed; z-index:80; width:230px; padding:8px; border:1px solid #e7dfd4; border-radius:17px; background:#fffdf9; box-shadow:0 14px 40px #40302020; animation:menu-in .22s cubic-bezier(.22,.8,.3,1); }
+.menu a,.menu button { display:flex; align-items:center; gap:9px; width:100%; padding:13px 12px; border:0; border-radius:11px; background:none; font:400 12px Arial,sans-serif; color:#6c706b; text-decoration:none; text-align:left; min-height:44px; }
+.menu a:hover,.menu button:hover { background:#f2e9dd; }.menu .danger { color:#ad503d; }
+.dialog { position:fixed; inset:0; margin:auto; height:fit-content; overflow-y:auto; width:min(450px,calc(100% - 32px)); max-height:calc(100dvh - 32px); padding:30px; border:1px solid #e7dfd4; border-radius:24px; background:#fffdf9; color:#26333b; box-shadow:0 25px 80px #26333b30; }
+.dialog::backdrop { background:#26333b66; }.dialog[open] { animation:menu-in .28s cubic-bezier(.22,.8,.3,1); }
+.dialog h2 { margin:16px 0; font:600 23px Arial,sans-serif; }.dialog p { font:400 13px/1.8 Arial,sans-serif; color:#858779; overflow-wrap:anywhere; }
+.eyebrow { font-size:9px; color:#b57652; letter-spacing:.15em; }.close { float:right; border:0; background:none; color:#9b9288; }
+.buttons { display:flex; justify-content:flex-end; gap:10px; margin-top:26px; flex-wrap:wrap; }.buttons button { border:1px solid #e7dfd4; border-radius:12px; min-height:44px; padding:12px 16px; background:#fffdf9; color:#7a776e; font-size:12px; }.buttons .delete { color:white; background:#ad503d; border-color:#ad503d; }.buttons .primary { color:white; background:#b96f49; border-color:#b96f49; }
+.trigger:focus-visible,.menu a:focus-visible,.menu button:focus-visible,.dialog button:focus-visible { outline:2px solid #bd704b; outline-offset:3px; }
+@keyframes menu-in { from { opacity:0;transform:translateY(-8px) scale(.97); } to { opacity:1;transform:translateY(0) scale(1); } }
+@media(prefers-reduced-motion:reduce) { .menu,.dialog[open] { animation:none; }.trigger { transition:none; } }

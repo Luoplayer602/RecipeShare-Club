@@ -1,3 +1,5 @@
+import type { SaveEditorInput } from '@/lib/posts/editor-validation'
+import type { ProfileImageEdits } from '@/lib/image-crop'
 import { randomUUID } from 'node:crypto'
 import { sql } from 'drizzle-orm'
 import {
@@ -163,6 +165,7 @@ export const userProfiles = mysqlTable('user_profiles', {
   location: varchar('location', { length: 80 }).notNull().default(''),
   coverMediaId: varchar('cover_media_id', { length: 36 }).references(() => mediaAssets.id, { onDelete: 'restrict' }),
   avatarMediaId: varchar('avatar_media_id', { length: 36 }).references(() => mediaAssets.id, { onDelete: 'restrict' }),
+  imageEdits: json('image_edits').$type<ProfileImageEdits>(),
   coverY: int('cover_y', { unsigned: true }).notNull().default(50),
 }, table => [check('user_profiles_cover_y_check', sql`${table.coverY} BETWEEN 0 AND 100`)])
 
@@ -474,3 +477,9 @@ export const userFollows = mysqlTable('user_follows', {
   authorId: varchar('author_id', { length: 36 }).notNull().references(() => users.id, { onDelete: 'cascade' }),
   createdAt: datetime('created_at', { mode: 'date', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
 }, table => [primaryKey({ columns: [table.followerId, table.authorId] }), index('user_follows_author_idx').on(table.authorId), index('user_follows_recent_idx').on(table.followerId, table.createdAt, table.authorId), check('user_follows_not_self', sql`${table.followerId} <> ${table.authorId}`)])
+
+export const postEdits = mysqlTable('post_edits', {
+  postId: varchar('post_id',{length:36}).primaryKey().references(()=>posts.id,{onDelete:'cascade'}),
+  content: json('content').$type<SaveEditorInput>().notNull(),
+  updatedAt: datetime('updated_at',{mode:'date',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+})

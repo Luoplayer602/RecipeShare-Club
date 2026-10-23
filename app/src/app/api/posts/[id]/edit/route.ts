@@ -1,6 +1,7 @@
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
 import { db } from '@/db'
 import {
+  postEdits,
   mediaAssets,
   posts,
   recipeDetails,
@@ -130,6 +131,15 @@ export async function GET(_request: Request, context: Context) {
         .where(eq(postTags.postId, postId))
         .orderBy(asc(tags.name), asc(tags.id))
 
+      const [editing]=await tx.select().from(postEdits).where(eq(postEdits.postId,postId)).limit(1)
+      if(editing){
+        const input=editing.content
+        const ids=[...new Set([input.coverMediaId,...input.blocks.flatMap(block=>'mediaId' in block?[block.mediaId]:[])].filter((id):id is string=>!!id))]
+        const media=ids.length?await tx.select({id:mediaAssets.id,kind:mediaAssets.kind,source:mediaAssets.source,mimeType:mediaAssets.mimeType,url:mediaAssets.externalUrl}).from(mediaAssets).where(inArray(mediaAssets.id,ids)):[]
+        return {...post,title:input.title,excerpt:input.excerpt,coverMediaId:input.coverMediaId,updatedAt:editing.updatedAt,
+          recipe:input.recipe?{...input.recipe,ingredients:input.recipe.ingredients.map((row,position)=>({...row,position}))}:null,
+          blocks:input.blocks.map((data,position)=>({id:`edit-${position}`,data,position})),tags:input.tagNames.map((name,index)=>({id:`edit-tag-${index}`,name,slug:name})),media}
+      }
       const mediaIds = new Set<string>()
       if (post.coverMediaId) mediaIds.add(post.coverMediaId)
       for (const block of blocks) if ('mediaId' in block.data) mediaIds.add(block.data.mediaId)

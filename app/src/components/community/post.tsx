@@ -2,7 +2,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, ChefHat, Clock3, Share2, Users } from 'lucide-react'
+import { ChefHat, Clock3, Share2, Users } from 'lucide-react'
+import { ReaderBack } from './post-navigation'
 import { AuthToast } from '@/components/auth-toast'
 import { ChefLoader } from '@/components/chef-loader'
 import { SavePostButton } from './save-post-button'
@@ -49,15 +50,15 @@ export function CommunityPost({ id, user }: { id: string; user: SessionUser | nu
   }, [notice])
   function notify(message: string) { setNotice(value => ({ message, revision: value.revision + 1 })) }
   async function share() {
-    try { await navigator.clipboard.writeText(location.href); notify('Đã sao chép liên kết bài viết.') }
+    try { await navigator.clipboard.writeText(location.origin+location.pathname); notify('Đã sao chép liên kết bài viết.') }
     catch { notify('Bạn có thể sao chép địa chỉ trên thanh trình duyệt để chia sẻ.') }
   }
   const mediaById = new Map(post?.media.map(media => [media.id, media]))
   const cover = post?.media.find(media => media.id === post.coverMediaId)
   return <CommunityFrame user={user}>
     <main className={`${shell.feed} ${styles.reader}`}>
-      {error ? <div className={shell.empty} role="alert"><h1>Chưa thể mở bài viết</h1><p>{error}</p><button onClick={() => setRetry(value => value + 1)}>Thử lại</button><p><Link href="/home">Trở về căn bếp</Link></p></div> : !post ? <ChefLoader /> : <article className={styles.article}>
-        <Link href="/home" className={styles.back}><ArrowLeft size={14} />Trở về căn bếp</Link>
+      {error ? <div className={shell.empty} role="alert"><h1>Chưa thể mở bài viết</h1><p>{error}</p><button onClick={() => setRetry(value => value + 1)}>Thử lại</button><p><ReaderBack className={styles.back}/></p></div> : !post ? <ChefLoader /> : <article className={styles.article}>
+        <ReaderBack className={styles.back}/>
         <div className={styles.topline}><div className={styles.tags}>{post.tags.map(tag => <Link key={tag.id} href={`/home?tag=${encodeURIComponent(tag.slug)}`}>{tag.name}</Link>)}</div>{post.recipe && <div className={extra.facts}><span><Clock3 size={14} />Chuẩn bị: {post.recipe.prepMinutes ?? '—'} phút</span><span><Clock3 size={14} />Chế biến: {post.recipe.cookMinutes ?? '—'} phút</span><span><Users size={14} />{post.recipe.servings ?? '—'} người</span><span><ChefHat size={14} />Độ khó: {post.recipe.difficulty ?? '—'}/5</span></div>}</div>
         <h1>{post.title}</h1><p className={styles.lead}>{post.excerpt}</p>
         <div className={styles.byline}><Link href={`/profile/${encodeURIComponent(post.author.username)}`} className={styles.authorLink} aria-label={`Xem trang cá nhân của ${post.author.displayName}`}><span className={styles.smallAvatar}>{post.author.avatarUrl ? <Image src={post.author.avatarUrl} alt="" width={35} height={35} unoptimized /> : post.author.displayName.slice(0, 1).toUpperCase()}</span><div><strong>{post.author.displayName}</strong><small>{post.author.titleName}</small></div></Link><time dateTime={post.publishedAt}>{new Date(post.publishedAt).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}</time></div>

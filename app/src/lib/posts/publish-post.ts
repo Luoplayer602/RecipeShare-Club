@@ -3,11 +3,13 @@ import 'server-only'
 import { and, eq, inArray, isNull, max } from 'drizzle-orm'
 import { db } from '@/db'
 import {
+  postEdits,
   mediaAssets,
   posts,
   postRevisions,
   type PostRevisionSnapshot,
 } from '@/db/schema'
+import { saveDraft } from './save-draft'
 import { loadPostContent } from './load-content'
 import { publishEditorSchema } from './publish-validation'
 
@@ -49,10 +51,19 @@ export async function publishPost(
       return { ok: false, status: 404, code: 'POST_NOT_FOUND' }
     }
 
-    if (post.status !== 'draft') {
+    if (post.status !== 'draft' && post.status !== 'published') {
       return { ok: false, status: 409, code: 'POST_NOT_DRAFT' }
     }
 
+    const [editing]=await tx.select().from(postEdits).where(eq(postEdits.postId,postId)).limit(1)
+    if(post.status==='published'&&!editing)return {ok:false,status:409,code:'NO_SAVED_CHANGES'}
+    if(editing){
+      const check=publishEditorSchema.safeParse(editing.content)
+      if(!check.success)return {ok:false,status:422,code:'PUBLISH_VALIDATION_ERROR',issues:check.error.issues.map(issue=>({path:issue.path.join('.'),message:issue.message}))}
+      const applied=await saveDraft(postId,userId,editing.content,tx,true)
+      if(!applied.ok)return applied
+      Object.assign(post,{title:editing.content.title,excerpt:editing.content.excerpt,coverMediaId:editing.content.coverMediaId})
+    }
     const content = await loadPostContent(tx, postId, post.type)
 
     const validated = publishEditorSchema.safeParse({
@@ -75,6 +86,7 @@ export async function publishPost(
     })
 
     if (!validated.success) {
+      if(editing)throw new Error('Publication validation changed during update.')
       return {
         ok: false,
         status: 422,
@@ -128,6 +140,7 @@ export async function publishPost(
       )
 
       if (!valid) {
+        if(editing)throw new Error('Publication media changed during update.')
         return { ok: false, status: 422, code: 'INVALID_MEDIA' }
       }
     }
@@ -165,6 +178,8 @@ export async function publishPost(
       publishedAt,
       updatedAt: now,
     }).where(eq(posts.id, postId))
+
+    await tx.delete(postEdits).where(eq(postEdits.postId,postId))
 
     return {
       ok: true,

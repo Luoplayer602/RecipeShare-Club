@@ -18,7 +18,7 @@ export async function PATCH(request:Request) {
     const {displayName,...input} = parsed.data
     const result = await db.transaction(async tx=>{
       await tx.select({id:users.id}).from(users).where(eq(users.id,user.id)).limit(1).for('update')
-      const ids = [...new Set([input.coverMediaId,input.avatarMediaId].filter((id):id is string=>Boolean(id)))]
+      const ids = [...new Set([input.coverMediaId,input.avatarMediaId,input.imageEdits?.cover?.originalId,input.imageEdits?.avatar?.originalId].filter((id):id is string=>Boolean(id)))]
       if (ids.length) {
         const owned = await tx.select({id:mediaAssets.id}).from(mediaAssets).where(and(inArray(mediaAssets.id,ids),eq(mediaAssets.ownerId,user.id),eq(mediaAssets.kind,'image'),eq(mediaAssets.source,'upload')))
         if (owned.length!==ids.length) return false

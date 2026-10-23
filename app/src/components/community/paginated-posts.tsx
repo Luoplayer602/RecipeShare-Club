@@ -1,6 +1,6 @@
 'use client'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import Link from 'next/link'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { PostLink } from './post-navigation'
 import Image from 'next/image'
 import { ChevronLeft, ChevronRight, Clock3 } from 'lucide-react'
 import { SavePostButton } from './save-post-button'
@@ -9,9 +9,9 @@ import shell from './shell.module.css'
 import extra from './integration.module.css'
 import styles from './paginated-posts.module.css'
 
-export function PaginatedPosts({ result, pending, filterKey, onPage, onTag }: {
+export function PaginatedPosts({ result, pending, filterKey, onPage, onTag, renderActions }: {
   result: PostList | null; pending: boolean; filterKey: string;
-  onPage: (page: number) => void; onTag: (slug: string) => void;
+  onPage: (page: number) => void; onTag: (slug: string) => void; renderActions?: (post:PostSummary)=>ReactNode;
 }) {
   const [displayed, setDisplayed] = useState(result)
   const [outgoing, setOutgoing] = useState<PostSummary[] | null>(null)
@@ -89,9 +89,10 @@ export function PaginatedPosts({ result, pending, filterKey, onPage, onTag }: {
     scrollFrame.current = requestAnimationFrame(tick)
   }
   function cards(posts: PostSummary[]) {
-    return posts.map(post => <article className={shell.card} key={post.id}>
-      <Link href={`/posts/${post.id}`} className={shell.food} aria-label={`Xem ${post.title}`}>{post.coverUrl ? <Image className={extra.cover} src={post.coverUrl} alt="" width={420} height={300} unoptimized /> : <span>RecipeShare Club</span>}</Link>
-      <div className={shell.cardBody}><div className={shell.tags}>{post.tags.map(tag => <button key={tag.id} onClick={() => onTag(tag.slug)}>{tag.name}</button>)}</div><Link className={shell.titleButton} href={`/posts/${post.id}`}><h2>{post.title}</h2></Link><div className={shell.meta}><span>{post.author.displayName}</span><time dateTime={post.publishedAt}>{new Date(post.publishedAt).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}</time></div><p className={shell.description}>{post.excerpt}</p><div className={shell.cardFooter}>{post.recipe ? <span><Clock3 size={15} />Chuẩn bị {post.recipe.prepMinutes ?? '—'}′ · Chế biến {post.recipe.cookMinutes ?? '—'}′</span> : <span>Chuyện trong bếp</span>}<SavePostButton id={post.id} title={post.title} /></div></div>
+    return posts.map(post => <article className={shell.card} key={post.id} style={{position:'relative'}}>
+      {renderActions&&<div className={styles.tools}>{renderActions(post)}</div>}
+      <PostLink postId={post.id} className={shell.food} aria-label={`Xem ${post.title}`}>{post.coverUrl ? <Image className={extra.cover} src={post.coverUrl} alt="" width={420} height={300} unoptimized /> : <span>RecipeShare Club</span>}</PostLink>
+      <div className={shell.cardBody}><div className={shell.tags}>{post.tags.map(tag => <button key={tag.id} onClick={() => onTag(tag.slug)}>{tag.name}</button>)}</div><PostLink className={shell.titleButton} postId={post.id}><h2>{post.title}</h2></PostLink><div className={shell.meta}><span>{post.author.displayName}</span><time dateTime={post.publishedAt}>{new Date(post.publishedAt).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}</time></div><p className={shell.description}>{post.excerpt}</p><div className={shell.cardFooter}>{post.recipe ? <span><Clock3 size={15} />Chuẩn bị {post.recipe.prepMinutes ?? '—'}′ · Chế biến {post.recipe.cookMinutes ?? '—'}′</span> : <span>Chuyện trong bếp</span>}<SavePostButton id={post.id} title={post.title} /></div></div>
     </article>)
   }
   const page = displayed?.pagination.page ?? 1

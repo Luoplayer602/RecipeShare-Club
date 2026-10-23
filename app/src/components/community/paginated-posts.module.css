@@ -10,3 +10,5 @@
 .pagination span { color: #8d8d86; font-size: 10px; margin-left: 8px; }
 
 .pagination .pageItem { display:inline-flex; align-items:center; gap:8px; margin:0; }
+
+.tools { position:absolute; z-index:3; top:12px; right:12px; }

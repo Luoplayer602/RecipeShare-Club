@@ -15,7 +15,7 @@ const db = await mysql.createConnection({ host: process.env.DB_HOST, port: Numbe
 let cookie = '', userId, otherUserId
 async function request(url, method = 'GET', body, expected = 200, authenticated = true) {
   const form = body instanceof FormData
-  const response = await fetch(base + url, { method, headers: { ...(authenticated && cookie ? { Cookie: cookie } : {}), ...(body && !form ? { 'Content-Type': 'application/json' } : {}) }, body: body ? form ? body : JSON.stringify(body) : undefined })
+  const response = await fetch(base + url, { method, headers: { ...(method!=='GET'?{Origin:new URL(base).origin}:{}), ...(authenticated && cookie ? { Cookie: cookie } : {}), ...(body && !form ? { 'Content-Type': 'application/json' } : {}) }, body: body ? form ? body : JSON.stringify(body) : undefined })
   const data = await response.json()
   assert.equal(response.status, expected, `${method} ${url}: ${data.code || response.status}`)
   if (url === '/api/auth/login') cookie = response.headers.get('set-cookie').split(';')[0]
@@ -97,7 +97,28 @@ try {
     assert.deepEqual(published.blocks.filter(block => block.data.type === 'list').map(block => block.data), listBlocks)
     const list = await request(`/api/posts?q=${suffix}`, 'GET', undefined, 200, false)
     assert(list.posts.some(item => item.id === post.id))
-    await request(`/api/posts/${post.id}/edit`, 'PATCH', body, 409)
+    const edit={...body,title:body.title+' updated',blocks:[{type:'paragraph',text:'Updated content'}]}
+    await request(`/api/posts/${post.id}/edit`, 'PATCH', edit)
+    assert.equal((await request(`/api/posts/${post.id}`, 'GET',undefined,200,false)).post.title,body.title)
+    assert.equal((await request(`/api/posts/${post.id}/edit`)).post.title,edit.title)
+    await request(`/api/posts/${post.id}/edit`, 'PATCH', {...edit,coverMediaId:null})
+    await request(`/api/posts/${post.id}/publish`, 'POST',undefined,422)
+    assert.equal((await request(`/api/posts/${post.id}`, 'GET',undefined,200,false)).post.title,body.title)
+    await request(`/api/posts/${post.id}/edit`, 'PATCH',edit)
+    await request(`/api/posts/${post.id}/publish`, 'POST')
+    assert.equal((await request(`/api/posts/${post.id}`, 'GET',undefined,200,false)).post.title,edit.title)
+    await request(`/api/posts/${post.id}/publish`, 'POST',undefined,409)
+    await request(`/api/posts/${post.id}/manage`, 'PATCH',{action:'delete'},401,false)
+    const ownerCookie=cookie
+    await request('/api/auth/login','POST',{identifier:`uitest_other_${suffix}`,password})
+    await request(`/api/posts/${post.id}/manage`, 'PATCH',{action:'delete'},404)
+    await request(`/api/posts/${post.id}/edit`,'PATCH',body,404)
+    cookie=ownerCookie
+    await request(`/api/posts/${post.id}/edit`,'PATCH',{...edit,title:edit.title+' unpublished'})
+    await request(`/api/posts/${post.id}/manage`, 'PATCH',{action:'unpublish'})
+    await request(`/api/posts/${post.id}`, 'GET',undefined,404,false)
+    assert.equal((await request(`/api/posts/${post.id}/edit`)).post.title,edit.title+' unpublished')
+    await request(`/api/posts/${post.id}/publish`, 'POST')
   }
   const finalProfile = await request(profilePath)
   assert.equal(finalProfile.stats.publishedCount, 2)
@@ -106,6 +127,15 @@ try {
   assert.equal(profileSearch.pagination.total, 0)
   assert.equal(profileSearch.stats.publishedCount, 2)
   console.log('PASS: persisted profile/cover/avatar, public image access, private drafts, other-user/media guards and profile post counts/search.')
+  const deletable=(await request('/api/posts','POST',{type:'blog',title:'Delete QA '+suffix,excerpt:'Delete test'},201)).post
+  await request(`/api/posts/${deletable.id}/manage`,'PATCH',{action:'delete'})
+  await request(`/api/posts/${deletable.id}/edit`,'GET',undefined,404)
+  await request(`/api/posts/${deletable.id}/manage`,'PATCH',{action:'delete'},404)
+  const profileEdit={...profileInput,imageEdits:{cover:{originalId:image.id,settings:{zoom:1.5,x:.2,y:0,ratio:3}}}}
+  await request('/api/profile','PATCH',profileEdit)
+  assert.equal((await request(profilePath)).profile.imageEdits.cover.originalId,image.id)
+  assert.equal((await request(profilePath,'GET',undefined,200,false)).profile.imageEdits,undefined)
+  console.log('PASS: published-edit isolation, validation rollback, update, unpublish/republish, owner-only soft delete and private image-edit metadata.')
   const empty = await request(`/api/posts?q=no_result_${suffix}`, 'GET', undefined, 200, false)
   assert.equal(empty.posts.length, 0)
   console.log('PASS: login, upload, create/save/restore/publish recipe and blog, media restoration, public list/detail, all eight list styles, list-only publication, empty/invalid list rejection and auth/draft guards.')

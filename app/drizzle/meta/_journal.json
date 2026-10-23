@@ -50,6 +50,13 @@
       "when": 1792763309195,
       "tag": "0006_user_follows",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1792781287624,
+      "tag": "0007_author_management",
+      "breakpoints": true
     }
   ]
 }

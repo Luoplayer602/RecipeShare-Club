@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import {
+  postEdits,
   mediaAssets,
   posts,
   postBlocks,
@@ -12,6 +13,7 @@ import {
   recipeIngredients,
   tags,
 } from '@/db/schema'
+import type { PostTransaction } from './load-content'
 import type { SaveEditorInput } from './editor-validation'
 
 type SaveDraftResult =
@@ -26,8 +28,10 @@ export async function saveDraft(
   postId: string,
   userId: string,
   input: SaveEditorInput,
+  transaction?: PostTransaction,
+  applyPublished=false,
 ): Promise<SaveDraftResult> {
-  return db.transaction(async tx => {
+  const run = async (tx:PostTransaction):Promise<SaveDraftResult> => {
     const [post] = await tx
       .select({
         id: posts.id,
@@ -47,7 +51,7 @@ export async function saveDraft(
       return { ok: false, status: 404, code: 'POST_NOT_FOUND' }
     }
 
-    if (post.status !== 'draft') {
+    if (post.status !== 'draft' && post.status !== 'published') {
       return { ok: false, status: 409, code: 'POST_NOT_DRAFT' }
     }
 
@@ -103,6 +107,10 @@ export async function saveDraft(
     }
 
     const updatedAt = new Date()
+    if(post.status==='published'&&!applyPublished){
+      await tx.insert(postEdits).values({postId,content:input,updatedAt}).onDuplicateKeyUpdate({set:{content:input,updatedAt}})
+      return {ok:true,postId,updatedAt}
+    }
 
     await tx.update(posts).set({
       title: input.title,
@@ -203,5 +211,6 @@ export async function saveDraft(
     }
 
     return { ok: true, postId, updatedAt }
-  })
+  }
+  return transaction?run(transaction):db.transaction(run)
 }

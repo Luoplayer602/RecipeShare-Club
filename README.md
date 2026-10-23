@@ -36,7 +36,7 @@ MIGRATION_DB_USER=recipe_owner
 MIGRATION_DB_PASSWORD="<mat-khau-owner>"
 ```
 
-Hai file này được Git bỏ qua. `drizzle.config.ts` đọc thông tin migration và trỏ tới `src/db/schema.ts`; schema và migration được lưu trong repository; migration mới nhất là `0006_user_follows`. Sau khi cấu hình tài khoản migration, chạy `pnpm.cmd exec drizzle-kit migrate` trong `app/` để cập nhật database. Tài khoản `recipe_app` cần được tạo riêng với quyền `SELECT, INSERT, UPDATE, DELETE` trên `recipeshare.*`; Compose chưa tự tạo tài khoản này. Tài khoản `recipe_owner` dùng quản lý schema, không dùng làm tài khoản runtime.
+Hai file này được Git bỏ qua. `drizzle.config.ts` đọc thông tin migration và trỏ tới `src/db/schema.ts`; schema và migration được lưu trong repository; migration mới nhất là `0007_author_management`. Sau khi cấu hình tài khoản migration, chạy `pnpm.cmd exec drizzle-kit migrate` trong `app/` để cập nhật database. Tài khoản `recipe_app` cần được tạo riêng với quyền `SELECT, INSERT, UPDATE, DELETE` trên `recipeshare.*`; Compose chưa tự tạo tài khoản này. Tài khoản `recipe_owner` dùng quản lý schema, không dùng làm tài khoản runtime.
 
 Kiểm tra mã nguồn trong thư mục `app/`:
 

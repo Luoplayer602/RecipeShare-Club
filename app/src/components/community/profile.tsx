@@ -2,7 +2,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, ArrowUpRight, BookOpen, Camera, Check, ChefHat, FileText, MapPin, Pencil, Search, SlidersHorizontal, X } from 'lucide-react'
+import { ArrowLeft, ArrowUpRight, BookOpen, Check, ChefHat, FileText, MapPin, Pencil, Search, X } from 'lucide-react'
+import { CoverEditor } from '@/components/cover-editor'
+import { PhotoMenu } from '@/components/photo-menu'
+import { PostActions } from './post-actions'
+import type { ProfileImageEdits } from '@/lib/image-crop'
 import { FollowAuthor } from './follow-author'
 import { CommunityFrame } from './frame'
 import { CreatePost } from './create-post'
@@ -15,9 +19,9 @@ import { useStableResults } from '@/components/use-stable-results'
 import type { SessionUser, PostSummary, PostList } from './types'
 import shell from './shell.module.css'
 import styles from './profile.module.css'
-type FormProfile = { name:string; username:string; title:string; bio:string; location:string; avatar:string; cover:string; coverY:number; coverMediaId:string|null; avatarMediaId:string|null }
+type FormProfile = { name:string; username:string; title:string; bio:string; location:string; avatar:string; cover:string; coverY:number; coverMediaId:string|null; avatarMediaId:string|null; imageEdits?:ProfileImageEdits }
 type ProfileData = {
-  own:boolean; profile:{id:string;username:string;displayName:string;titleName:string;bio:string;location:string;avatarUrl:string|null;coverUrl:string|null;coverMediaId:string|null;avatarMediaId:string|null;coverY:number};
+  own:boolean; profile:{id:string;username:string;displayName:string;titleName:string;bio:string;location:string;avatarUrl:string|null;coverUrl:string|null;coverMediaId:string|null;avatarMediaId:string|null;coverY:number;imageEdits?:ProfileImageEdits};
   stats:{publishedCount:number;draftCount:number|null;followerCount:number;followingCount:number};
   items:(Omit<PostSummary,'publishedAt'> & {publishedAt:string|null;updatedAt:string})[];pagination:PostList['pagination'];
 }
@@ -46,8 +50,8 @@ export function ProfilePage({ username, viewer }: {username:string;viewer:Sessio
   const [notice,setNotice] = useState('')
   const [busy,setBusy] = useState(false)
   const operation = useRef(false)
-  const [cropping,setCropping] = useState(false)
-  const [coverY,setCoverY] = useState(50)
+  const [cropping,setCropping]=useState<{kind:'cover'|'avatar';source:string;ratio:number;file?:File}|null>(null)
+  const coverFrame=useRef<HTMLDivElement>(null)
   const [editing,setEditing] = useState(false)
   const [closing,setClosing] = useState(false)
   const [formError,setFormError] = useState('')
@@ -55,7 +59,7 @@ export function ProfilePage({ username, viewer }: {username:string;viewer:Sessio
   const dialog = useRef<HTMLDialogElement>(null)
   const main = useRef<HTMLElement>(null)
   const own = data?.own ?? false
-  const profile:FormProfile = data ? {name:data.profile.displayName,username:data.profile.username,title:data.profile.titleName,bio:data.profile.bio,location:data.profile.location,avatar:data.profile.avatarUrl||'',cover:data.profile.coverUrl||'',coverY:data.profile.coverY,coverMediaId:data.profile.coverMediaId,avatarMediaId:data.profile.avatarMediaId} : blank
+  const profile:FormProfile = data ? {name:data.profile.displayName,username:data.profile.username,title:data.profile.titleName,bio:data.profile.bio,location:data.profile.location,avatar:data.profile.avatarUrl||'',cover:data.profile.coverUrl||'',coverY:data.profile.coverY,coverMediaId:data.profile.coverMediaId,avatarMediaId:data.profile.avatarMediaId,imageEdits:data.profile.imageEdits} : blank
   const effectiveViewer = viewer && own ? {...viewer,displayName:profile.name,avatarUrl:profile.avatar||null} : viewer
   const postResult = useMemo<PostList|null>(()=>data && tab==='posts' ? {posts:data.items.flatMap(item=>item.publishedAt?[{...item,publishedAt:item.publishedAt}]:[]),pagination:data.pagination,popularTags:[],selectedTag:null}:null,[data,tab])
   useEffect(()=>{
@@ -79,27 +83,23 @@ export function ProfilePage({ username, viewer }: {username:string;viewer:Sessio
     return () => window.removeEventListener('follow-changed', sync)
   }, [username, own])
   async function saveProfile(value:FormProfile) {
-    await api('/api/profile',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({displayName:value.name,bio:value.bio,location:value.location,coverMediaId:value.coverMediaId,avatarMediaId:value.avatarMediaId,coverY:value.coverY})})
-    setData(current=>current?{...current,profile:{...current.profile,displayName:value.name,bio:value.bio,location:value.location,coverMediaId:value.coverMediaId,avatarMediaId:value.avatarMediaId,coverUrl:value.cover||null,avatarUrl:value.avatar||null,coverY:value.coverY}}:current)
+    await api('/api/profile',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({displayName:value.name,bio:value.bio,location:value.location,coverMediaId:value.coverMediaId,avatarMediaId:value.avatarMediaId,coverY:value.coverY,imageEdits:value.imageEdits})})
+    setData(current=>current?{...current,profile:{...current.profile,displayName:value.name,bio:value.bio,location:value.location,coverMediaId:value.coverMediaId,avatarMediaId:value.avatarMediaId,coverUrl:value.cover||null,avatarUrl:value.avatar||null,coverY:value.coverY,imageEdits:value.imageEdits}}:current)
     setReload(value=>value+1);router.refresh()
   }
-  async function upload(file:File|undefined,avatar=false) {
+  function openCrop(kind:'cover'|'avatar',file?:File){
+    const rect=coverFrame.current?.getBoundingClientRect(),original=profile.imageEdits?.[kind]?.originalId
+    setCropping({kind,file,source:file?URL.createObjectURL(file):original?`/api/media/${original}/file`:kind==='cover'?profile.cover:profile.avatar,ratio:kind==='avatar'?1:rect?rect.width/rect.height:3})
+  }
+  useEffect(()=>{const source=cropping?.source;return()=>{if(source?.startsWith('blob:'))URL.revokeObjectURL(source)}},[cropping?.source])
+  function upload(file:File|undefined,avatar=false){
     if(!file||operation.current)return
     if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5*1024*1024){setNotice('Chọn ảnh JPEG, PNG, WebP tối đa 5 MiB.');return}
-    operation.current=true;setBusy(true)
-    try {
-      const body=new FormData();body.set('file',file)
-      const {media}=await api('/api/media/upload',{method:'POST',body})
-      const url=`/api/media/${media.id}/file`
-      await saveProfile({...profile,...(avatar?{avatar:url,avatarMediaId:media.id}:{cover:url,coverMediaId:media.id,coverY:50})})
-      if(!avatar){setCoverY(50);setCropping(true)}
-      setNotice('Đã lưu ảnh trên máy chủ.')
-    } catch(error){setNotice(error instanceof Error?error.message:'Không lưu được ảnh.')}
-    finally {operation.current=false;setBusy(false)}
+    openCrop(avatar?'avatar':'cover',file)
   }
+  async function uploadMedia(file:File){const body=new FormData();body.set('file',file);const {media}=await api('/api/media/upload',{method:'POST',body});return media.id as string}
   function openEdit(){setFormError('');setForm(profile);setEditing(true);setClosing(false);dialog.current?.showModal()}
   function closeEdit(){if(!operation.current)setClosing(true)}
-  async function savePosition(){if(operation.current)return;operation.current=true;setBusy(true);try{await saveProfile({...profile,coverY});setCropping(false)}catch(error){setNotice(error instanceof Error?error.message:'Không lưu được vị trí ảnh.')}finally{operation.current=false;setBusy(false)}}
   function selectTag(tag:string){router.push(`/home?tag=${encodeURIComponent(tag)}`)}
   if(!data)return <CommunityFrame user={viewer}><main className={shell.feed}><Link href="/home">← Về trang chủ</Link>{error ? <p role="alert">{error}</p> : <ChefLoader />}{error&&<button onClick={()=>setReload(value=>value+1)}>Thử lại</button>}</main></CommunityFrame>
   return <CommunityFrame user={effectiveViewer} className={styles.page} rightPanel={<div className={styles.sideCard}><span className={styles.eyebrow}>CĂN BẾP NÀY CÓ</span><div><strong>{data.stats.publishedCount}</strong><span>bài đã xuất bản</span></div>{own&&<div><strong>{data.stats.draftCount}</strong><span>bản nháp của bạn</span></div>}<p>Một điều nhỏ bạn chia sẻ có thể làm bữa ăn của ai đó vui hơn.</p></div>}>
@@ -107,14 +107,13 @@ export function ProfilePage({ username, viewer }: {username:string;viewer:Sessio
     {error&&<p className={styles.formError} role="alert">{error}<button onClick={()=>setReload(value=>value+1)}>Thử lại</button></p>}
         <Link className={styles.back} href="/home"><ArrowLeft size={14} />Trở về căn bếp</Link>
         <section className={styles.profile} aria-label="Hồ sơ tác giả" aria-busy={busy}>
-          <div className={styles.cover}>
-            {profile.cover ? <FadeImage src={profile.cover} alt={`Ảnh bìa của ${profile.name}`} style={{ objectPosition: `center ${cropping ? coverY : profile.coverY}%` }} /> : <div className={styles.coverArt}><div><span>MỖI CĂN BẾP, MỘT CÂU CHUYỆN</span><p>Một góc nhỏ,<br /><em>nhiều bữa ngon.</em></p></div><FoodArt kind={1} /></div>}
-            {own && <div className={styles.coverActions}>{profile.cover && <button type="button" disabled={busy} onClick={() => { setCoverY(profile.coverY); setCropping(value => !value) }}><SlidersHorizontal size={14} /><span>Vị trí ảnh</span></button>}<label className={styles.photoButton}><Camera size={14} /><span>{busy ? 'Đang xử lý…' : 'Đổi ảnh bìa'}</span><input type="file" disabled={busy} accept="image/jpeg,image/png,image/webp" onChange={event => { void upload(event.target.files?.[0]); event.target.value = '' }} /></label></div>}
+          <div ref={coverFrame} className={styles.cover}>
+            {profile.cover ? <FadeImage src={profile.cover} alt={`Ảnh bìa của ${profile.name}`} style={{ objectPosition: `center ${profile.coverY}%` }} /> : <div className={styles.coverArt}><div><span>MỖI CĂN BẾP, MỘT CÂU CHUYỆN</span><p>Một góc nhỏ,<br /><em>nhiều bữa ngon.</em></p></div><FoodArt kind={1} /></div>}
+            {own&&<div className={styles.coverActions}><PhotoMenu kind="cover" canEdit={!!profile.cover} disabled={busy} className={styles.coverCamera} onEdit={()=>openCrop('cover')} onUpload={file=>upload(file)}/></div>}
           </div>
-          {own && cropping && <div className={styles.crop}><label>Vị trí dọc<input type="range" aria-label="Vị trí dọc ảnh bìa" min={0} max={100} value={coverY} onChange={event => setCoverY(Number(event.target.value))} /></label><button type="button" onClick={() => setCropping(false)}>Hủy</button><button type="button" onClick={savePosition}>Xong</button></div>}
           <div className={styles.identity}>
-            <div className={styles.avatar}>{profile.avatar ? <FadeImage src={profile.avatar} alt={`Ảnh đại diện của ${profile.name}`} /> : <span>{profile.name.slice(0,1).toUpperCase()}</span>}{own && <label className={styles.avatarUpload} title="Đổi ảnh đại diện"><Camera size={15} /><input type="file" disabled={busy} aria-label="Đổi ảnh đại diện" accept="image/jpeg,image/png,image/webp" onChange={event => { void upload(event.target.files?.[0],true); event.target.value = '' }} /></label>}</div>
-            <div className={styles.name}><span className={styles.rank}><ChefHat size={12} />{profile.title}</span><h1>{profile.name}</h1><span className={styles.username}>@{profile.username}</span></div>
+            <div className={styles.portrait}><div className={styles.avatar}>{profile.avatar?<FadeImage src={profile.avatar} alt={`Ảnh đại diện của ${profile.name}`}/>:<span>{profile.name.slice(0,1).toUpperCase()}</span>}{own&&<PhotoMenu kind="avatar" canEdit={!!profile.avatar} disabled={busy} className={styles.avatarUpload} onEdit={()=>openCrop('avatar')} onUpload={file=>upload(file,true)}/>}</div><span className={styles.rank}><ChefHat size={12}/>{profile.title}</span></div>
+            <div className={styles.name}><h1>{profile.name}</h1><span className={styles.username}>@{profile.username}</span></div>
             <div className={styles.actions}><FollowAuthor key={viewer?.id ?? 'guest'} username={username} />{own ? <button className={styles.secondary} disabled={busy} onClick={openEdit}><Pencil size={14} />Sửa hồ sơ</button> : null}</div>
           </div>
           <div className={styles.about}><p>{profile.bio || 'Câu chuyện từ căn bếp này đang được viết tiếp.'}</p><div className={styles.socialStats} aria-label="Thống kê theo dõi" aria-live="polite"><div><strong>{data.stats.followerCount.toLocaleString('vi-VN')}</strong>{' '}<span>người theo dõi</span></div><div><strong>{data.stats.followingCount.toLocaleString('vi-VN')}</strong>{' '}<span>đang theo dõi</span></div></div><div className={styles.details}>{profile.location && <span><MapPin size={13} />{profile.location}</span>}{own && <span><strong>{data!.stats.draftCount ?? 0}</strong> bản nháp</span>}</div></div>
@@ -123,10 +122,10 @@ export function ProfilePage({ username, viewer }: {username:string;viewer:Sessio
         <section className={styles.tabContent} aria-label={tab === 'posts' ? 'Bài viết đã xuất bản' : 'Bản nháp'}>
           <label className={styles.filter}><Search size={16} /><input value={query} maxLength={100} onChange={event => { setPage(1); setQuery(event.target.value) }} aria-label="Tìm bài viết của tác giả" placeholder="Tìm trong căn bếp này…" />{query && <button type="button" aria-label="Xóa tìm kiếm" onClick={() => { setPage(1); setQuery('') }}><X size={14} /></button>}</label>
           <div ref={resultsRegion} className={styles.results} aria-busy={pending}><div ref={resultsContent}>
-          {loadedTab !== tab ? <ChefLoader mode="section" /> : tab === 'posts' ? <PaginatedPosts result={postResult} pending={pending} filterKey={`${username}:${query}`} onPage={setPage} onTag={selectTag} /> : <>
+          {loadedTab !== tab ? <ChefLoader mode="section" /> : tab === 'posts' ? <PaginatedPosts result={postResult} pending={pending} filterKey={`${username}:${query}`} onPage={setPage} onTag={selectTag} renderActions={own?post=><PostActions id={post.id} title={post.title} onDone={()=>setReload(value=>value+1)}/>:undefined} /> : <>
             <div className={styles.drafts}>{data!.items.map(draft => <article className={styles.draft} key={draft.id}>
               <div className={styles.draftArt}>{draft.coverUrl ? <FadeImage src={draft.coverUrl} alt="" /> : <FoodArt kind={1} />}<span>BẢN NHÁP</span></div>
-              <div className={styles.draftBody}><small>{draft.type === 'recipe' ? 'Công thức' : 'Chuyện trong bếp'}</small><h2>{draft.title}</h2><p>{draft.excerpt}</p><div className={styles.draftTags}>{draft.tags.map(tag => <span key={tag.id}>#{tag.name}</span>)}</div><Link className={styles.primary} href={`/editor/${draft.id}`}><Pencil size={14} />Tiếp tục viết<ArrowUpRight size={14} /></Link></div>
+              <div className={styles.draftTools}><PostActions id={draft.id} title={draft.title} published={false} onDone={()=>setReload(value=>value+1)}/></div><div className={styles.draftBody}><small>{draft.type === 'recipe' ? 'Công thức' : 'Chuyện trong bếp'}</small><h2>{draft.title}</h2><p>{draft.excerpt}</p><div className={styles.draftTags}>{draft.tags.map(tag => <span key={tag.id}>#{tag.name}</span>)}</div><Link className={styles.primary} href={`/editor/${draft.id}`}><Pencil size={14} />Tiếp tục viết<ArrowUpRight size={14} /></Link></div>
             </article>)}</div>
             {data!.pagination.totalPages > 1 && <nav className={styles.draftPages} aria-label="Phân trang bản nháp"><button disabled={pending || page <= 1} onClick={() => setPage(page - 1)}>Trang trước</button><span>{data!.pagination.page} / {data!.pagination.totalPages}</span><button disabled={pending || !data!.pagination.hasNext} onClick={() => setPage(page + 1)}>Trang sau</button></nav>}
           </>}
@@ -140,6 +139,17 @@ export function ProfilePage({ username, viewer }: {username:string;viewer:Sessio
       <button type="button" className={styles.close} aria-label="Đóng sửa hồ sơ" onClick={closeEdit}><X size={20} /></button>
       {editing && <form inert={busy} onSubmit={async event => { event.preventDefault(); if (operation.current) return; if (!form.name.trim()) { setFormError('Nhập tên hiển thị của bạn.'); return } operation.current = true; setBusy(true); try { await saveProfile({ ...form, name: form.name.trim(), bio: form.bio.trim(), location: form.location.trim() }); setClosing(true); setNotice('Đã lưu hồ sơ trên máy chủ.') } catch (error) { setFormError(error instanceof Error ? error.message : 'Không lưu được hồ sơ.') } finally { operation.current = false; setBusy(false) } }}><span className={styles.eyebrow}>MỘT CHÚT VỀ BẠN</span><h2>Để căn bếp có dấu ấn riêng.</h2><label>Tên hiển thị<input required maxLength={80} value={form.name} onChange={event => setForm({ ...form, name: event.target.value })} /></label><label>Giới thiệu<textarea rows={4} maxLength={240} value={form.bio} onChange={event => setForm({ ...form, bio: event.target.value })} /><small>{form.bio.length}/240</small></label><label>Nơi ở<input maxLength={80} value={form.location} onChange={event => setForm({ ...form, location: event.target.value })} /></label>{formError && <p className={styles.formError} role="alert">{formError}</p>}<button className={styles.primary} type="submit"><Check size={15} />Lưu hồ sơ</button></form>}
     </dialog>
+    {own&&cropping&&<CoverEditor source={cropping.source} kind={cropping.kind} ratio={cropping.ratio} initial={cropping.file?undefined:profile.imageEdits?.[cropping.kind]?.settings} onClose={()=>setCropping(null)} onApply={async(image,settings)=>{
+      if(operation.current)throw new Error('Đang xử lý ảnh. Hãy thử lại.')
+      operation.current=true;setBusy(true)
+      try{
+        const originalId=cropping.file?await uploadMedia(cropping.file):profile.imageEdits?.[cropping.kind]?.originalId||(cropping.kind==='cover'?profile.coverMediaId:profile.avatarMediaId)
+        if(!originalId)throw new Error('Không tìm thấy ảnh gốc.')
+        const blob=await (await fetch(image)).blob(),id=await uploadMedia(new File([blob],`${cropping.kind}.jpg`,{type:'image/jpeg'})),url=`/api/media/${id}/file`
+        await saveProfile({...profile,...(cropping.kind==='cover'?{cover:url,coverMediaId:id,coverY:50}:{avatar:url,avatarMediaId:id}),imageEdits:{...profile.imageEdits,[cropping.kind]:{originalId,settings}}})
+        setNotice('Đã lưu ảnh đã chỉnh sửa trên máy chủ.')
+      }finally{operation.current=false;setBusy(false)}
+    }}/>}
     <AuthToast message={notice} />
   </CommunityFrame>
 }

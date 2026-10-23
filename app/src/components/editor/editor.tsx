@@ -25,9 +25,10 @@ import Image from 'next/image'
 import {
   ArrowDown, ArrowLeft, ArrowUp, BookOpen, Check, ChefHat, ChevronRight,
   Bookmark, Share2, Clock3, Eye, FileText, GripVertical, ImagePlus, ListChecks,
-  Plus, Save, Send, Tag, Trash2, Type, Upload, Users, Video,
+  Plus, Save, Send, Tag, Trash2, Type, Upload, Users, Video, X,
 } from 'lucide-react'
 import { FoodArt } from '@/components/food-art'
+import { UnsavedChanges } from '@/components/unsaved-changes'
 import { AuthToast } from '@/components/auth-toast'
 import styles from './page.module.css'
 
@@ -97,13 +98,13 @@ function hasBlockContent(block: Block) {
   return Boolean(block.src)
 }
 
-function PublishPanel({ draft, onPublish }: { draft: Draft; onPublish: () => void }) {
+function PublishPanel({ draft, onPublish, published=false }: { draft: Draft; onPublish: () => void; published?:boolean }) {
   const checks = [
     { complete: Boolean(draft.title.trim()), label: 'Một tiêu đề thật hấp dẫn' },
     { complete: Boolean(draft.cover), label: 'Ảnh đại diện món ăn' },
     { complete: draft.blocks.some(hasBlockContent), label: 'Nội dung câu chuyện' },
   ]
-  return <><div className={styles.checklist}><span className={styles.navCaption}>TRƯỚC KHI CHIA SẺ</span>{checks.map(check => <div key={check.label}><span className={check.complete ? styles.complete : ''}><Check size={12} /></span>{check.label}</div>)}</div><button className={styles.publish} onClick={onPublish}>Sẵn sàng chia sẻ <Send size={16} /></button><p className={styles.demoNote}>Bản nháp được lưu trên máy chủ khi bạn nhấn lưu.<br />Chỉ xuất bản khi bạn đã sẵn sàng.</p></>
+  return <><div className={styles.checklist}><span className={styles.navCaption}>TRƯỚC KHI CHIA SẺ</span>{checks.map(check => <div key={check.label}><span className={check.complete ? styles.complete : ''}><Check size={12} /></span>{check.label}</div>)}</div><button className={styles.publish} onClick={onPublish}>{published?'Cập nhật bài viết':'Sẵn sàng chia sẻ'} <Send size={16} /></button><p className={styles.demoNote}>Bản nháp được lưu trên máy chủ khi bạn nhấn lưu.<br />Chỉ xuất bản khi bạn đã sẵn sàng.</p></>
 }
 
 function RecipeFacts({ draft }: { draft: Draft }) {
@@ -149,6 +150,7 @@ function Preview({ draft, user, compact = false }: { draft: Draft; user: Session
 export default function EditorPage({ postId, user }: { postId: string; user: SessionUser }) {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
+  const [published,setPublished]=useState(false),[noticeHidden,setNoticeHidden]=useState(false)
   const [loadError, setLoadError] = useState('')
   const [retry, setRetry] = useState(0)
   const [working, setWorking] = useState(false)
@@ -230,7 +232,8 @@ export default function EditorPage({ postId, user }: { postId: string; user: Ses
           post: Omit<PostDetail, 'blocks'> & { status: string; blocks: (PostDetail['blocks'][number] & { id: string })[] }
         }
         if (controller.signal.aborted) return
-        if (post.status !== 'draft') { router.replace(`/posts/${postId}`); return }
+        if (!['draft','published'].includes(post.status)) { router.replace(`/posts/${postId}`); return }
+        setPublished(post.status==='published')
         const sources = new Map(post.media.map(media => {
           const src = media.source === 'upload' ? `/api/media/${media.id}/file` : media.url || ''
           mediaIds.current.set(src, media.id)
@@ -257,12 +260,6 @@ export default function EditorPage({ postId, user }: { postId: string; user: Ses
     void load()
     return () => controller.abort()
   }, [postId, retry, router])
-
-  useEffect(() => {
-    function warn(event: BeforeUnloadEvent) { if (!saved || operation.current) event.preventDefault() }
-    window.addEventListener('beforeunload', warn)
-    return () => window.removeEventListener('beforeunload', warn)
-  }, [saved])
 
   useEffect(() => {
     if (!notice) return
@@ -362,15 +359,16 @@ export default function EditorPage({ postId, user }: { postId: string; user: Ses
     if (!payload.success) throw new Error('Kiểm tra tiêu đề, nguyên liệu và các giá trị số trước khi lưu.')
     await apiRequest(`/api/posts/${postId}/edit`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload.data) })
   }
-  async function save() {
-    if (operation.current) return
+  async function save():Promise<boolean> {
+    if (operation.current) return false
     operation.current = true; setWorking(true)
     const version = revision.current
     try {
       await persist(draft)
       if (revision.current === version) setSaved(true)
-      setNotice(revision.current === version ? 'Đã lưu bản nháp trên máy chủ.' : 'Đã lưu phiên bản trước. Bạn có thay đổi mới cần lưu thêm.')
-    } catch (error) { setNotice(error instanceof Error ? error.message : 'Không lưu được bản nháp.') }
+      setNotice(revision.current === version ? (published?'Đã lưu bản sửa. Bản đang xuất bản chưa thay đổi.':'Đã lưu bản nháp trên máy chủ.') : 'Đã lưu phiên bản trước. Bạn có thay đổi mới cần lưu thêm.')
+      return revision.current===version
+    } catch (error) { setNotice(error instanceof Error ? error.message : 'Không lưu được bản nháp.');return false }
     finally { operation.current = false; setWorking(false) }
   }
   async function previewPublication() {
@@ -398,13 +396,14 @@ export default function EditorPage({ postId, user }: { postId: string; user: Ses
       <div className={styles.breadcrumb}><span>Căn bếp của bạn</span><ChevronRight size={14} /><strong>{previewMode ? 'Xem trước bài viết' : 'Soạn bài viết'}</strong></div>
       <div className={styles.headerActions}><span className={styles.saveState}>{saved ? <Check size={14} /> : <span className={styles.dot} />}{saved ? 'Đã lưu trên máy chủ' : 'Bản nháp'}</span><button className={styles.secondary} aria-label={previewMode ? 'Về editor' : 'Xem trước bài viết'} aria-pressed={previewMode} onClick={() => switchPreview(!previewMode)}>{previewMode ? <FileText size={16} /> : <Eye size={16} />}<span>{previewMode ? 'Về editor' : 'Xem trước'}</span></button><button className={styles.primary} onClick={save}>{saved ? <Check key="saved" size={16} /> : <Save key="unsaved" size={16} />}<span>{saved ? 'Đã lưu nháp' : 'Lưu nháp'}</span></button></div>
     </header>
+    {published&&!noticeHidden&&<div className={styles.managedNotice}><span>Đang sửa bài đã xuất bản. Người đọc vẫn thấy bản hiện tại cho đến khi bạn nhấn cập nhật.</span><Link href={`/posts/${postId}`} target="_blank">Xem bản đang xuất bản ↗</Link><button type="button" aria-label="Đóng thông báo chỉnh sửa" onClick={()=>setNoticeHidden(true)}><X size={16}/></button></div>}
     <div className={styles.modeBody}>
     <div ref={editorSurface} className={`${styles.layout} ${styles.editorMode}`} data-active={!previewMode} inert={previewMode} aria-hidden={previewMode}>
       <aside className={styles.sidebar}>
         <Link className={styles.back} href="/home"><ArrowLeft size={16} /><span>Về trang chủ</span></Link>
         <div className={styles.author}><span className={styles.avatar}>{user.displayName.slice(0, 1)}</span><div>{user.displayName}<small>{user.titleName}</small></div></div>
         <span className={styles.navCaption}>TRONG BÀI VIẾT</span>
-        <nav><a href="#information" onClick={event => { event.preventDefault(); history.replaceState(null, '', '#information'); scrollWorkspace('information') }}><FileText size={17} /><span>Thông tin chung</span></a><EditorCollapse open={draft.type === 'recipe'}><a href="#ingredients" onClick={event => { event.preventDefault(); history.replaceState(null, '', '#ingredients'); scrollWorkspace('ingredients') }}><ListChecks size={17} /><span>Nguyên liệu</span><small>{draft.ingredients.length}</small></a></EditorCollapse><a href="#content" onClick={event => { event.preventDefault(); history.replaceState(null, '', '#content'); scrollWorkspace('content') }}><BookOpen size={17} /><span>Nội dung</span><small>{draft.blocks.length}</small></a></nav>
+        <nav><a href="#information" onClick={event => { event.preventDefault(); history.replaceState(history.state, '', '#information'); scrollWorkspace('information') }}><FileText size={17} /><span>Thông tin chung</span></a><EditorCollapse open={draft.type === 'recipe'}><a href="#ingredients" onClick={event => { event.preventDefault(); history.replaceState(history.state, '', '#ingredients'); scrollWorkspace('ingredients') }}><ListChecks size={17} /><span>Nguyên liệu</span><small>{draft.ingredients.length}</small></a></EditorCollapse><a href="#content" onClick={event => { event.preventDefault(); history.replaceState(history.state, '', '#content'); scrollWorkspace('content') }}><BookOpen size={17} /><span>Nội dung</span><small>{draft.blocks.length}</small></a></nav>
         <div className={styles.sidebarBottom}><ChefHat size={29} /><p>Công thức của bạn,<br /><em>cảm hứng của ai đó.</em></p><small>Mỗi điều nhỏ bạn chia sẻ đều có thể làm một căn bếp ấm hơn.</small></div>
       </aside>
       <main className={styles.workspace}>
@@ -472,7 +471,7 @@ export default function EditorPage({ postId, user }: { postId: string; user: Ses
         <div className={styles.previewPanelHeader}><span><Eye size={16} />Bài viết của bạn</span><span className={styles.liveBadge}><span />Xem trực tiếp</span></div>
         <Preview user={user} draft={draft} compact />
         <button className={styles.fullPreview} onClick={() => switchPreview(true)}>Mở bản xem trước <ChevronRight size={15} /></button>
-        <PublishPanel draft={draft} onPublish={previewPublication} />
+        <PublishPanel draft={draft} onPublish={previewPublication} published={published} />
       </aside>
     </div>
     {previewMounted && <div className={styles.readingMode} data-active={previewMode} inert={!previewMode} aria-hidden={!previewMode} onTransitionEnd={event => {
@@ -480,10 +479,11 @@ export default function EditorPage({ postId, user }: { postId: string; user: Ses
     }}>
       <aside className={styles.readingNav}><span className={styles.navCaption}>TRONG BÀI VIẾT</span><button className={styles.secondary} onClick={() => switchPreview(false)}><ArrowLeft size={15} />Tiếp tục chỉnh sửa</button>{draft.blocks.filter(block => block.type === 'heading').map(block => <a key={block.id} href={`#preview-${block.id}`} onClick={event => { event.preventDefault(); scrollWorkspace(`preview-${block.id}`) }}>{block.text || 'Tiêu đề chưa đặt'}</a>)}</aside>
       <main className={styles.readingFeed}><div className={styles.readingNotice}><Eye size={15} /><span>Bản xem trước · Nội dung chưa xuất bản</span></div><Preview user={user} draft={draft} /></main>
-      <aside className={styles.readingAside}><PublishPanel draft={draft} onPublish={previewPublication} /></aside>
+      <aside className={styles.readingAside}><PublishPanel draft={draft} onPublish={previewPublication} published={published} /></aside>
     </div>}
     </div>
     </div>
+    <UnsavedChanges dirty={!saved} onSave={save}/>
     <AuthToast message={notice} />
   </div>
 }

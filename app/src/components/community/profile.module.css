@@ -118,3 +118,9 @@
 .socialStats > div { display:flex; flex-direction:column; gap:6px; }
 .socialStats strong { color:#26333b; font-size:25px; line-height:1.2; font-weight:600; }
 .socialStats span { font-size:12px; color:#8b8e86; }
+
+.page .coverActions .coverCamera { width:42px; height:42px; padding:0; border-radius:50%; }.avatarUpload { padding:0; }.coverCamera:focus-visible,.avatarUpload:focus-visible { outline:2px solid #c87952; outline-offset:3px; }
+
+.portrait { flex:0 0 146px; min-width:0; margin-top:-39px; display:flex; flex-direction:column; align-items:center; gap:12px; }.portrait .avatar { flex:none; width:112px; height:112px; margin-top:0; }.portrait .rank { max-width:100%; justify-content:center; text-align:center; font-size:10px; line-height:1.5; }.portrait .rank svg { flex-shrink:0; }.identity .name { padding-top:16px; }.identity .name h1 { margin-top:0; }
+.draft { position:relative; }.draftTools { position:absolute; top:12px; right:12px; z-index:3; }.draftBody { padding-right:48px; }
+@media(max-width:760px) { .portrait { flex-basis:112px; margin-top:-32px; gap:9px; }.portrait .avatar { width:90px; height:90px; }.portrait .rank { font-size:9px; padding:4px 6px; }.identity .actions { margin-left:125px; }.draftBody { padding-right:48px; } }
