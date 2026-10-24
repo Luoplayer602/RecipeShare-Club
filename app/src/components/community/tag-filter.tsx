@@ -12,7 +12,7 @@ function TagButton({ tag, selected, pinned, onSelect, onPin }: { tag: PopularTag
   const moved = useRef(false)
   const cancel = () => { if (timer.current) clearTimeout(timer.current); timer.current = null }
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current) }, [])
-  return <button type="button" aria-pressed={selected} data-pinned={pinned} title={`${tag.name} · ${tag.postCount} bài viết. Nhấn giữ hoặc Shift + Enter để ghim lọc nhiều nhãn.`}
+  return <button type="button" aria-pressed={selected} data-pinned={pinned} title={`${tag.name} · ${tag.postCount} bài viết. Nhấn giữ hoặc Shift + Enter để ghim lọc nhiều danh mục.`}
     onPointerDown={event => {
       if (!event.isPrimary || event.button !== 0) return
       cancel(); held.current = false; moved.current = false; start.current = { x: event.clientX, y: event.clientY }
@@ -31,8 +31,8 @@ export function TagFilter({ catalog, selectedTags, current, pinned, onChange }: 
   const extras = active.filter(slug => !catalog.some(tag => tag.slug === slug)).map(slug => ({ id: slug, slug, name: selectedTags.find(tag => tag.slug === slug)?.name ?? slug, postCount: 0 }))
   if (!catalog.length && !active.length) return null
   function remove(slug: string) { onChange(current === slug ? '' : current, pinned.filter(tag => tag !== slug)) }
-  return <nav className={`${shell.categories} ${styles.hotTags}`} aria-label="Lọc theo nhãn">
-    <button type="button" aria-pressed={!active.length} onClick={() => onChange('', [])}>Tất cả nhãn</button>
+  return <nav className={`${shell.categories} ${styles.hotTags}`} aria-label="Lọc theo danh mục">
+    <button type="button" aria-pressed={!active.length} onClick={() => onChange('', [])}>Tất cả danh mục</button>
     {[...extras, ...catalog].map(tag => <TagButton key={tag.slug} tag={tag} selected={active.includes(tag.slug)} pinned={pinned.includes(tag.slug)} onSelect={() => {
       if (active.includes(tag.slug)) remove(tag.slug)
       else onChange(tag.slug, pinned)

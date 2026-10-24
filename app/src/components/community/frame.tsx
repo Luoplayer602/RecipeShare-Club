@@ -2,7 +2,8 @@
 import { useContext, useEffect, useLayoutEffect, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ChefHat, Search, Utensils, X } from 'lucide-react'
+import { ChefHat, Utensils } from 'lucide-react'
+import { SearchBox } from './search-box'
 import { InteractiveAmbient } from '@/components/interactive-ambient'
 import { AccountArea } from './account-area'
 import { CommunityNav } from './community-nav'
@@ -28,7 +29,6 @@ export function CommunityFrame(props: CommunityFrameProps) {
   return update ? <>{props.children}</> : <StandaloneCommunityFrame {...props} />
 }
 export function StandaloneCommunityFrame({ user, children, active, onSelect, query, onQuery, rightPanel, className = '' }: CommunityFrameProps) {
-  const [search, setSearch] = useState('')
   const [savedCount, setSavedCount] = useState<number | undefined>()
   useEffect(() => {
     const controller = new AbortController()
@@ -50,7 +50,7 @@ export function StandaloneCommunityFrame({ user, children, active, onSelect, que
     <InteractiveAmbient className="ambient-one" /><InteractiveAmbient className="ambient-two" /><InteractiveAmbient className="ambient-three" />
     <header className={styles.header}>
       <Link href="/home" className={styles.logo} onClick={onSelect ? event => { event.preventDefault(); onSelect('home') } : undefined}><Image src="/icons/logo.png" alt="" width={48} height={48} unoptimized priority /><span>RecipeShare<small>CLUB</small></span></Link>
-      <form action="/home" className={styles.search} onSubmit={onQuery ? event => event.preventDefault() : undefined}><Search size={19} aria-hidden="true" /><input name="q" aria-label="Tìm bài viết" placeholder="Tìm món ăn bạn yêu thích…" value={onQuery ? query : search} onChange={event => onQuery ? onQuery(event.target.value) : setSearch(event.target.value)} />{(onQuery ? query : search) && <button type="button" aria-label="Xóa tìm kiếm" onClick={() => onQuery ? onQuery('') : setSearch('')}><X size={16} /></button>}</form>
+      <SearchBox query={query} onQuery={onQuery}/>
       <div className={styles.account}><AccountArea user={user} /></div>
     </header>
     <div className={styles.layout}>

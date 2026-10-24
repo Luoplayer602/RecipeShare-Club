@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict'
+import {parseSearch} from '../src/lib/posts/search.ts'
+const mixed=parseSearch('canh @minhan #món chay %nấm hương #bữa tối')
+assert.equal(mixed.text,'canh')
+assert.deepEqual(mixed.authors,['minhan'])
+assert.deepEqual(mixed.tags,['món chay','bữa tối'])
+assert.deepEqual(mixed.ingredients,['nấm hương'])
+assert.equal(mixed.peopleOnly,false)
+assert.equal(parseSearch('@minhan').peopleOnly,true)
+assert.equal(parseSearch('@').incomplete,true)
+assert.equal(parseSearch('#món chay %').incomplete,true)
+assert.deepEqual(parseSearch('100% ngon').ingredients,[])
+assert.deepEqual(parseSearch('Món #chay #chay').tags,['chay'])
+assert.equal(parseSearch(Array(11).fill('#a').join(' ')).valid,false)
+assert.equal(parseSearch('a'.repeat(301)).valid,false)
+console.log('PASS: combined search grammar, multiword terms, incomplete operators, deduplication and bounded complexity.')

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { parseSearch } from './search'
 
 export const listPostsQuerySchema = z.strictObject({
   page: z.coerce.number()
@@ -20,7 +21,8 @@ export const listPostsQuerySchema = z.strictObject({
 
   q: z.string()
     .trim()
-    .max(100)
+    .max(300)
+    .refine(value => parseSearch(value).valid, 'Use at most ten search operators.')
     .optional(),
 
   tags: z.string().max(809).transform(value => [...new Set(value.split(','))]).pipe(z.array(z.string().trim().min(1).max(80)).max(10)).optional(),

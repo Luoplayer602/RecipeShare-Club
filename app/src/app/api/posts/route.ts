@@ -23,6 +23,7 @@ import {
   mediaAssets,
   posts,
   recipeDetails,
+  recipeIngredients,
   users,
   userTitles,
   postTags,
@@ -30,6 +31,7 @@ import {
 } from '@/db/schema'
 
 import { listPostsQuerySchema } from '@/lib/posts/list-validation'
+import { parseSearch } from '@/lib/posts/search'
 
 
 
@@ -198,10 +200,15 @@ async function GETHandler(request: Request) {
         conditions.push(eq(posts.type, query.type))
       }
 
-      if (query.q) {
+      const search = parseSearch(query.q ?? '')
+      if (search.incomplete) conditions.push(sql`false`)
+      for (const name of search.tags) conditions.push(exists(tx.select({id:postTags.tagId}).from(postTags).innerJoin(tags,eq(tags.id,postTags.tagId)).where(and(eq(postTags.postId,posts.id),sql`LOCATE(${name}, ${tags.name}) > 0`))))
+      for (const username of search.authors) conditions.push(exists(tx.select({id:users.id}).from(users).where(and(eq(users.id,posts.authorId),eq(users.status,'active'),sql`LOCATE(${username.toLowerCase()}, ${users.username}) > 0`))))
+      for (const name of search.ingredients) conditions.push(exists(tx.select({id:recipeIngredients.id}).from(recipeIngredients).where(and(eq(recipeIngredients.postId,posts.id),sql`LOCATE(${name}, ${recipeIngredients.name}) > 0`))))
+      if (search.text) {
         // Parameterized literal substring search.
         conditions.push(
-          query.following ? sql`(LOCATE(${query.q}, ${posts.title}) > 0 OR EXISTS (SELECT 1 FROM users WHERE users.id = ${posts.authorId} AND (LOCATE(${query.q}, users.display_name) > 0 OR LOCATE(${query.q}, users.username) > 0)) OR EXISTS (SELECT 1 FROM post_tags INNER JOIN tags ON tags.id = post_tags.tag_id WHERE post_tags.post_id = ${posts.id} AND LOCATE(${query.q}, tags.name) > 0))` : sql`LOCATE(${query.q}, ${posts.title}) > 0`,
+          query.following ? sql`(LOCATE(${search.text}, ${posts.title}) > 0 OR EXISTS (SELECT 1 FROM users WHERE users.id = ${posts.authorId} AND (LOCATE(${search.text}, users.display_name) > 0 OR LOCATE(${search.text}, users.username) > 0)) OR EXISTS (SELECT 1 FROM post_tags INNER JOIN tags ON tags.id = post_tags.tag_id WHERE post_tags.post_id = ${posts.id} AND LOCATE(${search.text}, tags.name) > 0))` : sql`LOCATE(${search.text}, ${posts.title}) > 0`,
         )
       }
 

@@ -324,7 +324,7 @@ export default function EditorPage({ postId, user }: { postId: string; user: Ses
   function addTag() {
     const value = tag.trim().replace(/^#/, '')
     if (!value) return
-    if (value.length > 60 || draft.tags.length >= 20) { setNotice('Tối đa 20 nhãn, mỗi nhãn 60 ký tự.'); return }
+    if (value.length > 60 || draft.tags.length >= 20) { setNotice('Tối đa 20 danh mục, mỗi danh mục 60 ký tự.'); return }
     if (!draft.tags.some(item => item.toLocaleLowerCase('vi') === value.toLocaleLowerCase('vi'))) change({ tags: [...draft.tags, value] })
     setTag('')
   }
@@ -420,8 +420,8 @@ export default function EditorPage({ postId, user }: { postId: string; user: Ses
               <div ref={typeSwitch} className={styles.typeSwitch} role="group" aria-label="Loại bài viết"><span ref={typeMarker} className={styles.typeMarker} aria-hidden="true" /><button aria-pressed={draft.type === 'recipe'} disabled title="Loại bài được chọn khi tạo"><ChefHat size={15} />Công thức</button><button aria-pressed={draft.type === 'blog'} disabled title="Loại bài được chọn khi tạo"><BookOpen size={15} />Chuyện trong bếp</button></div>
               <label className={styles.field}>Tiêu đề<input value={draft.title} maxLength={200} onChange={e => change({ title: e.target.value })} placeholder="Đặt tên cho câu chuyện của bạn…" /></label>
               <label className={styles.field}>Mô tả ngắn<AutoTextarea value={draft.excerpt} maxRows={4} maxLength={500} rows={3} onChange={e => change({ excerpt: e.target.value })} placeholder="Điều gì làm món ăn này đặc biệt?" /><small>{draft.excerpt.length}/500</small></label>
-              <div className={styles.tagLabel}><Tag size={14} />Nhãn bài viết</div>
-              <div ref={tagList} className={styles.tags}>{draft.tags.map(item => <EditorTag key={item} name={item} onRemove={() => change({ tags: draft.tags.filter(t => t !== item) })} />)}<form className={styles.addTag} onSubmit={e => { e.preventDefault(); addTag() }}><input aria-label="Nhãn mới" value={tag} onChange={e => setTag(e.target.value)} placeholder="+ Thêm nhãn" maxLength={60} /><button aria-label="Thêm nhãn" type="submit"><Plus size={14} /></button></form></div>
+              <div className={styles.tagLabel}><Tag size={14} />Danh mục bài viết</div>
+              <div ref={tagList} className={styles.tags}>{draft.tags.map(item => <EditorTag key={item} name={item} onRemove={() => change({ tags: draft.tags.filter(t => t !== item) })} />)}<form className={styles.addTag} onSubmit={e => { e.preventDefault(); addTag() }}><input aria-label="Danh mục mới" value={tag} onChange={e => setTag(e.target.value)} placeholder="+ Thêm danh mục" maxLength={60} /><button aria-label="Thêm danh mục" type="submit"><Plus size={14} /></button></form></div>
             </div>
           </div>
           <EditorCollapse open={draft.type === 'recipe'}><div className={styles.recipeMeta}>

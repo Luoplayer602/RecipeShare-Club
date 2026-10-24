@@ -11,6 +11,7 @@ import { FollowAuthor } from './follow-author'
 import type { PostList } from './types'
 import shell from './shell.module.css'
 import styles from './following.module.css'
+import { parseSearch } from '@/lib/posts/search'
 
 type Author = { id: string; username: string; displayName: string; titleName: string; avatarUrl: string | null; postCount: number; followerCount: number }
 type Directory = { totalFollowing: number; authors: Author[]; suggestions: Author[]; pagination: { page: number; total: number; totalPages: number } }
@@ -24,10 +25,12 @@ export function FollowingContent({ query, clearQuery }: { query: string; clearQu
   const [directoryBusy, setDirectoryBusy] = useState(true)
   const [directoryError, setDirectoryError] = useState('')
   const [page, setPage] = useState(1)
-  const [previousQuery, setPreviousQuery] = useState(query)
-  if (query !== previousQuery) { setPreviousQuery(query); setPage(1) }
+  const postQuery = parseSearch(query).peopleOnly ? '' : query
+  const [previousQuery, setPreviousQuery] = useState(postQuery)
+  if (postQuery !== previousQuery) { setPreviousQuery(postQuery); setPage(1) }
   const [result, setResult] = useState<PostList | null>(null)
-  const [pending, setPending] = useState(true)
+  const [loading, setPending] = useState(true)
+  const pending = loading && !parseSearch(query).peopleOnly
   const [error, setError] = useState('')
   const [revision, setRevision] = useState(0)
   useEffect(() => {
@@ -40,7 +43,7 @@ export function FollowingContent({ query, clearQuery }: { query: string; clearQu
     const timer = setTimeout(async () => {
       setPending(true); setError('')
       try {
-        const response = await fetch(`/api/posts?${new URLSearchParams({ following: '1', q: query, page: String(page), limit: '10' })}`, { cache: 'no-store', signal: controller.signal })
+        const response = await fetch(`/api/posts?${new URLSearchParams({ following: '1', q: postQuery, page: String(page), limit: '10' })}`, { cache: 'no-store', signal: controller.signal })
         if (!response.ok) throw new Error(response.status === 401 ? 'Phiên đăng nhập đã hết. Hãy đăng nhập lại.' : 'Chưa thể tải bài viết. Vui lòng thử lại.')
         const data: PostList = await response.json()
         if (controller.signal.aborted) return
@@ -48,9 +51,9 @@ export function FollowingContent({ query, clearQuery }: { query: string; clearQu
         setResult(data)
       } catch (error) { if (!controller.signal.aborted) setError(error instanceof Error ? error.message : 'Không kết nối được máy chủ.') }
       finally { if (!controller.signal.aborted) setPending(false) }
-    }, 200)
+    }, 400)
     return () => { clearTimeout(timer); controller.abort() }
-  }, [query, page, revision])
+  }, [postQuery, page, revision])
   useEffect(() => {
     const controller = new AbortController()
     const timer = setTimeout(async () => {
@@ -82,8 +85,8 @@ export function FollowingContent({ query, clearQuery }: { query: string; clearQu
     <div className={shell.feedHeading}><h2>Món mới từ căn bếp quen</h2><span>{pending ? <ChefLoader mode="inline" /> : `${result?.pagination.total ?? 0} bài viết · Mới nhất trước`}</span></div>
     {error ? <div className={shell.empty} role="alert"><h2>Chưa thể mở căn bếp</h2><p>{error}</p><button onClick={() => setRevision(value => value + 1)}>Thử lại</button></div> : <div aria-busy={pending}>
       {!result && <ChefLoader />}
-      <EditorCollapse open={Boolean(result && !result.posts.length)}><div className={shell.empty}>{query ? <Search size={32} /> : <Users size={32} />}<h2>{query ? 'Chưa có kết quả phù hợp' : directory?.totalFollowing ? 'Những câu chuyện mới đang được viết' : 'Cùng làm quen những căn bếp mới'}</h2><p>{query ? 'Thử tìm tên tác giả, món ăn hoặc nhãn khác.' : directory?.totalFollowing ? 'Các bếp bạn theo dõi chưa có bài viết được xuất bản.' : 'Chọn theo dõi một bếp bên dưới. Bài viết mới của họ sẽ xuất hiện tại đây.'}</p>{query && <button onClick={clearQuery}>Xóa tìm kiếm</button>}</div></EditorCollapse>
-      <PaginatedPosts result={result} pending={pending} filterKey={`following:${query}`} onPage={setPage} onTag={tag => router.push(`/home?tag=${encodeURIComponent(tag)}`)} />
+      <EditorCollapse open={Boolean(result && !result.posts.length)}><div className={shell.empty}>{query ? <Search size={32} /> : <Users size={32} />}<h2>{query ? 'Chưa có kết quả phù hợp' : directory?.totalFollowing ? 'Những câu chuyện mới đang được viết' : 'Cùng làm quen những căn bếp mới'}</h2><p>{query ? 'Thử tìm tên tác giả, món ăn hoặc danh mục khác.' : directory?.totalFollowing ? 'Các bếp bạn theo dõi chưa có bài viết được xuất bản.' : 'Chọn theo dõi một bếp bên dưới. Bài viết mới của họ sẽ xuất hiện tại đây.'}</p>{query && <button onClick={clearQuery}>Xóa tìm kiếm</button>}</div></EditorCollapse>
+      <PaginatedPosts result={result} pending={pending} filterKey={`following:${postQuery}`} onPage={setPage} onTag={tag => router.push(`/home?tag=${encodeURIComponent(tag)}`)} />
     </div>}
     <section className={styles.discover}><h2>Khám phá những căn bếp mới</h2>{directory && <div className={styles.authors}>{directory.suggestions.map(author => <article className={styles.author} key={author.id}><Link href={`/profile/${encodeURIComponent(author.username)}`} className={styles.suggestionLink}><Avatar author={author} /><h3>{author.displayName}</h3></Link><p>{author.postCount} bài viết · {author.followerCount.toLocaleString('vi-VN')} người theo dõi</p><Link href={`/profile/${encodeURIComponent(author.username)}`}>Ghé thăm căn bếp →</Link><FollowAuthor username={author.username} initialFollowing={false} /></article>)}</div>}{directory && !directory.suggestions.length && <p className={styles.hint}>Chưa có bếp mới để gợi ý. Ghé lại sau nhé.</p>}{directoryError && !listOpen && <p role="alert">{directoryError}<button onClick={() => setRevision(value => value + 1)}>Thử lại</button></p>}</section>
   </>

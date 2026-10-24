@@ -7,5 +7,5 @@ export function EditorTag({ name, onRemove }: { name: string; onRemove: () => vo
   const [removing, setRemoving] = useState(false)
   return <span className={`${styles.tag} ${removing ? styles.removing : ''}`} onAnimationEnd={event => {
     if (removing && event.target === event.currentTarget) onRemove()
-  }}>{name}<button type="button" disabled={removing} aria-label={`Xóa nhãn ${name}`} onClick={() => setRemoving(true)}><X size={12} /></button></span>
+  }}>{name}<button type="button" disabled={removing} aria-label={`Xóa danh mục ${name}`} onClick={() => setRemoving(true)}><X size={12} /></button></span>
 }
