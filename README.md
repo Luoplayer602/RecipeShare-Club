@@ -1,6 +1,6 @@
 # RecipeShare Club
 
-Website chia sẻ công thức nấu ăn, đề 29. Hiện đã có nền Docker local, ứng dụng Next.js chính thức trong `app/` và cấu hình Drizzle cho MySQL. Đã tích hợp đăng nhập/đăng ký, bảng tin, editor, xuất bản và trang cá nhân với MySQL. Xem [checkpoint tích hợp](docs/integration-checkpoint.md) để biết phạm vi đã hoàn thành và các phần còn thiếu.
+Website chia sẻ công thức nấu ăn, đề 29. Ứng dụng Next.js chính thức trong `app/` dùng MySQL và Drizzle; có đăng nhập/đăng ký, công thức/nguyên liệu/danh mục, editor, xuất bản, hồ sơ, lưu bài và theo dõi. Bản production chạy toàn bộ dịch vụ bằng Docker Compose, gồm Nginx HTTPS, phpMyAdmin, Prometheus/Grafana và Loki/Alloy. [Checkpoint tích hợp](docs/integration-checkpoint.md) ghi lại lịch sử cùng trạng thái hiện tại.
 
 ## Ứng dụng chính thức
 
@@ -38,7 +38,7 @@ MIGRATION_DB_USER=recipe_owner
 MIGRATION_DB_PASSWORD="<mat-khau-owner>"
 ```
 
-Hai file này được Git bỏ qua. `drizzle.config.ts` đọc thông tin migration và trỏ tới `src/db/schema.ts`; schema và migration được lưu trong repository; migration mới nhất là `0007_author_management`. Sau khi cấu hình tài khoản migration, chạy `pnpm.cmd exec drizzle-kit migrate` trong `app/` để cập nhật database. Tài khoản `recipe_app` cần được tạo riêng với quyền `SELECT, INSERT, UPDATE, DELETE` trên `recipeshare.*`; Compose chưa tự tạo tài khoản này. Tài khoản `recipe_owner` dùng quản lý schema, không dùng làm tài khoản runtime.
+Hai file này được Git bỏ qua. `drizzle.config.ts` đọc thông tin migration và trỏ tới `src/db/schema.ts`; schema và migration được lưu trong repository; migration mới nhất là `0007_author_management`. Với workflow dev, sau khi cấu hình tài khoản migration, chạy `pnpm.cmd exec drizzle-kit migrate` trong `app/` để cập nhật database; tạo riêng tài khoản `recipe_app` với quyền `SELECT, INSERT, UPDATE, DELETE` trên `recipeshare.*`. Bản production tự tạo tài khoản runtime và chạy migration bằng các service khởi tạo. Tài khoản `recipe_owner` dùng quản lý schema, không dùng làm tài khoản runtime.
 
 Kiểm tra mã nguồn trong thư mục `app/`:
 
@@ -75,7 +75,7 @@ Lệnh PowerShell trên chỉ áp dụng execution policy cho tiến trình ch�
 - Nginx non-root, filesystem chỉ đọc, bỏ capabilities, security headers, reverse proxy tới Next.js trên host và healthcheck.
 - Mạng dữ liệu nội bộ; log Docker xoay vòng tối đa 3 file × 10 MB mỗi service.
 
-Nginx chuyển tiếp frontend và API tới `host.docker.internal:3000`, hỗ trợ streaming và WebSocket hot reload. Next.js chưa được đóng gói Docker. Prometheus + Grafana đã có dashboard tự nạp, metrics API/tiến trình và Nginx exporter. Xem [hướng dẫn giám sát](docs/monitoring.md) để đăng nhập và kiểm tra. Loki + Alloy thu log Nginx và sự kiện API/server Next.js; xem [hướng dẫn log và LogQL](docs/logging.md). Khi tạo lại Alloy, restart Nginx để cập nhật địa chỉ collector.
+Trong workflow dev, Nginx chuyển tiếp frontend và API tới `host.docker.internal:3000`, hỗ trợ streaming và WebSocket hot reload. Trong production, Nginx chuyển tiếp tới service `app:3000`; ứng dụng chạy từ image standalone với volume upload riêng. Prometheus + Grafana có dashboard tự nạp cho API/tiến trình, Nginx, MySQL và container. Xem [hướng dẫn giám sát](docs/monitoring.md) để đăng nhập và kiểm tra. Loki + Alloy thu log Nginx và sự kiện API/server Next.js; xem [hướng dẫn log và LogQL](docs/logging.md). Khi tạo lại app hoặc Alloy, restart Nginx để cập nhật địa chỉ đã phân giải.
 
 Image được ghim tag phiên bản; chưa ghim digest. Nguồn cấu hình: [MySQL official image](https://hub.docker.com/_/mysql), [phpMyAdmin official image](https://hub.docker.com/_/phpmyadmin), [Nginx unprivileged](https://hub.docker.com/r/nginxinc/nginx-unprivileged).
 
@@ -94,7 +94,9 @@ docker compose up -d --wait
 
 Khi báo không kết nối được Docker Engine, mở Docker Desktop và đợi Engine sẵn sàng rồi chạy lại. Khi có lỗi khởi tạo, xem `docker compose ps -a` và `docker compose logs mysql`; không xóa volume để thử lại khi có dữ liệu cần giữ.
 
-Đã kiểm tra trên Docker Desktop Linux containers ngày 20/10/2026: Compose hợp lệ; cả ba service chạy; Nginx và MySQL healthy; website, liveness và phpMyAdmin trả HTTP 200; Nginx chạy UID 101 và trả security headers; DB không publish cổng, mạng data là internal. Bảng kiểm thử giữ nguyên một dòng sau restart/recreate và đã được dọn. Chưa kiểm thử luồng nghiệp vụ hoặc đăng nhập phpMyAdmin qua trình duyệt.
+Các ghi chú sau mô tả lịch sử kiểm tra, không thay thế trạng thái cập nhật 25/10/2026 bên dưới.
+
+Đã kiểm tra trên Docker Desktop Linux containers ngày 20/10/2026: Compose hợp lệ; cả ba service chạy; Nginx và MySQL healthy; website, liveness và phpMyAdmin trả HTTP 200; Nginx chạy UID 101 và trả security headers; DB chưa publish cổng ở thời điểm này, mạng data là internal. Bảng kiểm thử giữ nguyên một dòng sau restart/recreate và đã được dọn. Khi đó chưa kiểm thử luồng nghiệp vụ hoặc đăng nhập phpMyAdmin qua trình duyệt.
 
 Cập nhật ngày 21/10/2026: đã kiểm tra Next.js trả HTTP 200 trên cổng 3001, đăng nhập phpMyAdmin, publish MySQL trên localhost:3307 và kết nối bằng Node.js/mysql2 với tài khoản `recipe_app`. Database nghiệp vụ vẫn trống. TypeScript và ESLint của `app/` kiểm tra thành công; chưa kiểm thử build production hoặc luồng xác thực.
 
@@ -105,3 +107,12 @@ Cập nhật 24/10/2026: đã chuyển Nginx từ trang tĩnh sang reverse proxy
 Grafana: http://localhost:3002/d/recipeshare-overview — user `admin`, mật khẩu local tại `.secrets/grafana_admin_password.txt`. Prometheus: http://localhost:9090. Chạy `scripts/init-local.ps1` để tạo secret và đồng bộ metrics token trước `docker compose up`. Xem [hướng dẫn và minh chứng](docs/monitoring.md). Next.js tiếp tục chạy trực tiếp trên máy để phát triển.
 
 Dashboard MySQL/container: http://localhost:3002/d/recipeshare-infrastructure. Compose tự khởi tạo tài khoản MySQL `recipe_monitor` chỉ có USAGE; Telegraf thu CPU/RAM/network qua proxy Docker API giới hạn quyền. Xem [cấu hình, PromQL và kiểm thử](docs/infrastructure-monitoring.md). Service `mysql-monitor-setup` hoàn thành rồi thoát mã 0 là bình thường.
+
+## Trạng thái xác minh 25/10/2026
+
+- Production đã build và chạy trên project riêng với volume mới; HTTPS tự ký, HTTP redirect, cookie Secure/HttpOnly, origin guard, upload, xuất bản và tìm kiếm kết hợp đạt kiểm thử.
+- Session, bài viết và ảnh còn nguyên sau restart MySQL và recreate app. App chạy non-root, filesystem chỉ đọc, không publish cổng app và không chứa env/source/upload local trong image runtime.
+- Tám target Prometheus, dashboard MySQL/container, quyền USAGE của monitor và log Nginx/Next.js đối chiếu request ID đã được kiểm tra. LogQL có sẵn trong tài liệu logging.
+- TypeScript, ESLint, Docker build và kiểm thử tìm kiếm đạt; hai cảnh báo tracing media cũ đã được xử lý. Chrome đã kiểm tra popup/bàn phím và bố cục 390 px/320 px; người dùng xác nhận hover giữ mở/đóng đúng và hoạt ảnh mượt. Safari iPhone thực tế chưa được xác minh lại.
+- Google/Facebook và quên mật khẩu chưa tích hợp. Báo cáo tối thiểu 10 trang, bộ ảnh minh chứng cuối cùng và xác minh repository/tài khoản theo mã số sinh viên vẫn còn trong phần bàn giao.
+- Đề ghi Loki + Promtail; hiện dự án dùng Loki + Alloy. Cần xác nhận với giảng viên về thành phần thay thế trước khi kết luận đáp ứng hoàn toàn tiêu chí này. Cảnh báo trình duyệt với chứng chỉ tự ký là dự kiến; script không tự thay đổi kho tin cậy của máy.

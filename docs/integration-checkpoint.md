@@ -1,5 +1,11 @@
 # Integration checkpoint — 2026-10-23
 
+## Current status — 2026-10-25
+
+The sections below preserve the integration history. Saved/following APIs and UI, author management and profile image editing are now implemented. Both media tracing warnings have been resolved. The opt-in production Compose overlay runs the standalone application, least-privilege database setup, migrations, persistent uploads and self-signed HTTPS; see [deployment instructions](docker-production.md). Combined category/author/ingredient search and the user/help popups are implemented; see [search behavior and validation](search.md).
+
+Production lifecycle/security/persistence tests, eight scrape targets and correlated Loki logs passed. Chrome desktop and 390/320 px layouts passed; the user confirmed the help popup's hover bridge and smooth open/close on 25/10/2026. Direct iPhone Safari testing remains outstanding. Google/Facebook login and password recovery remain unimplemented and are outside topic 29's stated core requirements. The assignment names Promtail while this project uses Alloy; acceptance of that substitution still needs confirmation. The final academic report, presentation evidence and GitHub submission checks are deferred.
+
 ## Branches
 
 - `main` contains the production app, content/media backend and database migrations.

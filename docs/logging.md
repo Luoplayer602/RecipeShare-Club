@@ -1,6 +1,8 @@
 # Loki + Grafana Alloy
 
-Next.js tiếp tục chạy trên Windows bằng `pnpm dev`. Nginx và Next.js gửi syslog đến Alloy; Alloy đẩy log vào Loki. Grafana đọc Loki qua mạng Compose.
+Trong workflow dev bên dưới, Next.js chạy trên Windows bằng `pnpm dev`. Nginx và Next.js gửi syslog đến Alloy; Alloy đẩy log vào Loki. Grafana đọc Loki qua mạng Compose. Bản [Docker production](docker-production.md) chạy Next.js trong service `app`, gửi log trực tiếp tới Alloy trong mạng container và dùng các cổng host riêng.
+
+Đề yêu cầu Loki + Promtail; cấu hình hiện tại dùng Alloy. Pipeline và các truy vấn LogQL đã được kiểm thử, nhưng vẫn cần giảng viên chấp nhận thành phần thay thế để chốt tiêu chí theo đúng tên trong đề.
 
 ```text
 Nginx access JSON / error → Alloy UDP 1515 / 1516 ─┐
@@ -152,6 +154,8 @@ Khi sửa Alloy/Loki/datasource, restart service tương ứng. Khi recreate All
 Nếu thiếu log: kiểm tra `docker compose ps`, `docker compose logs --tail 50 alloy loki`, biến `LOG_SYSLOG_PORT` của Next.js, datasource Loki trong Grafana và khoảng thời gian Explore. Healthcheck Alloy đạt chưa đảm bảo Loki nhận log; dùng `node scripts/test-logging.mjs` để kiểm tra cả đường đi.
 
 ## Kết quả xác minh 24/10/2026
+
+Đây là ghi chú lịch sử. Cập nhật 25/10/2026: Next.js đã có image Docker production, Nginx HTTPS tự ký và hai cảnh báo tracing media đã được xử lý. Tám target metrics cùng log Nginx/Next.js nối request ID đã đạt kiểm thử, gồm bản production. Kiểm tra log dev được chạy lại và đạt ngày 25/10/2026; bộ ảnh minh chứng cuối cùng vẫn để sau.
 
 - Cấu hình Compose, Alloy validate, Loki verify-config và Nginx syntax đạt. Alloy healthy, Loki được xác nhận bằng ghi/đọc log thật qua Grafana.
 - Datasource/dashboard Loki đã provision; truy vấn các panel không lỗi. Log Nginx/Next.js nối được bằng request ID, query marker không lọt vào Loki, nhánh error Nginx che query đúng. Sự kiện 500 được giả lập trong tiến trình test.
