@@ -33,7 +33,7 @@ services:
   mysql:
     image: mysql:8.4.11
     ports:
-      - "127.0.0.1:3307:3306"
+      - "127.0.0.1:${MYSQL_PORT:-3307}:3306"
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE:-recipeshare}
@@ -221,7 +221,7 @@ services:
     restart: unless-stopped
     command: [run, --server.http.listen-addr=0.0.0.0:12345, --storage.path=/var/lib/alloy, /etc/alloy/config.alloy]
     ports:
-      - "127.0.0.1:1514:1514/udp"
+      - "127.0.0.1:${SYSLOG_PORT:-1514}:1514/udp"
     volumes:
       - ./infra/alloy/config.alloy:/etc/alloy/config.alloy:ro
       - alloy_data:/var/lib/alloy

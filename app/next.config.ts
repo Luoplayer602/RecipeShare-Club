@@ -6,6 +6,7 @@ const devOrigins = Object.values(networkInterfaces()).flatMap((entries) =>
 );
 
 const nextConfig: NextConfig = {
+  output: process.env.NEXT_STANDALONE === '1' ? 'standalone' : undefined,
   allowedDevOrigins: devOrigins,
   /* config options here */
   cacheComponents: true,

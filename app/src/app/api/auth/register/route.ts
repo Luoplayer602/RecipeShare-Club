@@ -34,7 +34,8 @@ function getSafeErrorSummary(error: unknown) {
 
   const details = error as Record<string, unknown>
   const summary: Record<string, unknown> = {}
-  for (const key of ['name', 'message', 'code', 'errno', 'sqlState'] as const) {
+  // Drizzle messages include SQL parameters, including contact details and hashes.
+  for (const key of ['name', 'code', 'errno', 'sqlState'] as const) {
     if (key in details) summary[key] = details[key]
   }
 

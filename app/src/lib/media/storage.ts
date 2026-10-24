@@ -9,7 +9,7 @@ const storageKeyPattern =
 export function getUploadDirectory(): string {
   const configured = process.env.MEDIA_UPLOAD_DIR?.trim()
 
-  return path.resolve(
+  return path.resolve(/* turbopackIgnore: true */
     configured || path.join(process.cwd(), '.uploads'),
   )
 }
@@ -30,5 +30,5 @@ export function getStoredFilePath(storageKey: string): string {
     throw new Error('Invalid media storage key.')
   }
 
-  return path.join(getUploadDirectory(), storageKey)
+  return path.join(/* turbopackIgnore: true */ getUploadDirectory(), storageKey)
 }

@@ -1,0 +1,110 @@
+# Opt-in production overlay; the base Compose workflow still proxies a host dev server.
+services:
+  app-db-setup:
+    image: mysql:8.4.11
+    user: mysql
+    restart: "no"
+    network_mode: service:mysql
+    entrypoint: [bash, /opt/app/setup.sh]
+    environment:
+      DB_NAME: ${MYSQL_DATABASE:-recipeshare}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    secrets: [mysql_root_password, mysql_app_password]
+    volumes:
+      - ./infra/app/setup.sh:/opt/app/setup.sh:ro
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+
+  migrate:
+    build:
+      context: ./app
+      target: migration
+    image: recipeshare-migration:local
+    restart: "no"
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${MYSQL_DATABASE:-recipeshare}
+      DB_USER: ${MYSQL_USER:-recipe_owner}
+      DB_PASSWORD_FILE: /run/secrets/mysql_owner_password
+    secrets: [mysql_owner_password]
+    depends_on:
+      app-db-setup:
+        condition: service_completed_successfully
+    networks: [data]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+
+  app:
+    build:
+      context: ./app
+      target: runner
+    image: recipeshare-app:local
+    restart: unless-stopped
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${MYSQL_DATABASE:-recipeshare}
+      DB_USER: recipe_app
+      DB_PASSWORD_FILE: /run/secrets/mysql_app_password
+      METRICS_BEARER_TOKEN_FILE: /run/secrets/metrics_bearer_token
+      MEDIA_UPLOAD_DIR: /data/uploads
+      LOG_SYSLOG_HOST: alloy
+      LOG_SYSLOG_PORT: 1514
+    secrets: [mysql_app_password, metrics_bearer_token]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      alloy:
+        condition: service_healthy
+    volumes:
+      - app_uploads:/data/uploads
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+      - /app/.next/cache:uid=1000,gid=1000,size=64m
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks: [data, edge, monitoring]
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/api/health/db').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 6
+
+  nginx:
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "${WEB_BIND_ADDRESS:-127.0.0.1}:${HTTPS_PORT:-8443}:8443"
+    environment:
+      HTTPS_PORT: ${HTTPS_PORT:-8443}
+      NGINX_ENVSUBST_FILTER: ^HTTPS_PORT$
+      NGINX_ENVSUBST_OUTPUT_DIR: /tmp
+    volumes:
+      - ./infra/nginx/production-main.conf:/etc/nginx/nginx.conf:ro
+      - ./infra/nginx/production.conf.template:/etc/nginx/templates/production.conf.template:ro
+    secrets: [tls_certificate, tls_private_key]
+
+  prometheus:
+    volumes:
+      - ./infra/prometheus/production.yml:/etc/prometheus/prometheus.yml:ro
+
+volumes:
+  app_uploads:
+
+secrets:
+  mysql_app_password:
+    file: ./.secrets/mysql_app_password.txt
+  tls_certificate:
+    file: ./.secrets/tls/localhost.crt
+  tls_private_key:
+    file: ./.secrets/tls/localhost.key

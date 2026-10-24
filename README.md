@@ -4,6 +4,8 @@ Website chia sẻ công thức nấu ăn, đề 29. Hiện đã có nền Docker
 
 ## Ứng dụng chính thức
 
+Bản Docker production có frontend/API, migration, upload volume và Nginx HTTPS: [hướng dẫn chạy](docs/docker-production.md). Dev tiếp tục dùng `pnpm dev` như bên dưới. Tags được dùng làm danh mục; hỗ trợ tìm kiếm `#danh mục`, `@username`, `%nguyên liệu` và kết hợp nhiều điều kiện: [cú pháp tìm kiếm](docs/search.md).
+
 `app/` dùng Next.js App Router, TypeScript, Tailwind và ESLint; mã nguồn nằm trong `app/src/`. `demo-ui/` là bản thử giao diện local, được Git bỏ qua.
 
 ```powershell

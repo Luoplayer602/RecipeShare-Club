@@ -1,0 +1,9 @@
+node_modules
+.next
+.uploads
+.tasks
+.env*
+*.tsbuildinfo
+.git
+AGENTS.md
+README.md
