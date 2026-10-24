@@ -22,3 +22,24 @@ groups:
           severity: warning
         annotations:
           summary: "API 5xx ratio exceeds 5% with at least 20 requests in five minutes."
+      - alert: MySqlUnavailable
+        expr: mysql_up{job="mysql"} == 0 or up{job="mysql"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "MySQL or its metrics exporter is unavailable."
+      - alert: ContainerMetricsUnavailable
+        expr: up{job="containers"} == 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container metrics exporter cannot be scraped."
+      - alert: ContainerStatsMissing
+        expr: absent(docker_container_mem_usage{job="containers"}) and on(job) up{job="containers"} == 1
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container exporter is reachable but Docker memory statistics are missing."

@@ -101,3 +101,5 @@ Cập nhật 24/10/2026: đã chuyển Nginx từ trang tĩnh sang reverse proxy
 ## Giám sát local
 
 Grafana: http://localhost:3002/d/recipeshare-overview — user `admin`, mật khẩu local tại `.secrets/grafana_admin_password.txt`. Prometheus: http://localhost:9090. Chạy `scripts/init-local.ps1` để tạo secret và đồng bộ metrics token trước `docker compose up`. Xem [hướng dẫn và minh chứng](docs/monitoring.md). Next.js tiếp tục chạy trực tiếp trên máy để phát triển.
+
+Dashboard MySQL/container: http://localhost:3002/d/recipeshare-infrastructure. Compose tự khởi tạo tài khoản MySQL `recipe_monitor` chỉ có USAGE; Telegraf thu CPU/RAM/network qua proxy Docker API giới hạn quyền. Xem [cấu hình, PromQL và kiểm thử](docs/infrastructure-monitoring.md). Service `mysql-monitor-setup` hoàn thành rồi thoát mã 0 là bình thường.

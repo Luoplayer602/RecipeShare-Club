@@ -1,0 +1,97 @@
+{
+  "observedAt": "2026-10-24T16:32:54.547Z",
+  "project": "recipeshare-club",
+  "validation": {
+    "mysqlUsageOnly": true,
+    "applicationTableReadDenied": true,
+    "dockerApiAllowlist": true,
+    "nonRootCollectors": true,
+    "panelQueries": true
+  },
+  "mysql": {
+    "available": 1,
+    "connectedThreads": 8,
+    "maxConnections": 151,
+    "queries": 4312,
+    "uptimeSeconds": 4954
+  },
+  "containers": [
+    {
+      "service": "alloy",
+      "cpuPercent": 0.2770891251022077,
+      "memoryBytes": 48742400,
+      "receivedBytes": 439064,
+      "transmittedBytes": 1161848
+    },
+    {
+      "service": "container-metrics",
+      "cpuPercent": 0.7562790697674419,
+      "memoryBytes": 44736512,
+      "receivedBytes": 1327834,
+      "transmittedBytes": 123568
+    },
+    {
+      "service": "docker-metrics-proxy",
+      "cpuPercent": 0.06868356500408831,
+      "memoryBytes": 12857344,
+      "receivedBytes": 516755,
+      "transmittedBytes": 7042167
+    },
+    {
+      "service": "grafana",
+      "cpuPercent": 1.0727332242225858,
+      "memoryBytes": 283299840,
+      "receivedBytes": 1308031,
+      "transmittedBytes": 11872111
+    },
+    {
+      "service": "loki",
+      "cpuPercent": 0.6133551554828152,
+      "memoryBytes": 94920704,
+      "receivedBytes": 215361,
+      "transmittedBytes": 5013587
+    },
+    {
+      "service": "mysql",
+      "cpuPercent": 0.4343744889615699,
+      "memoryBytes": 511299584,
+      "receivedBytes": 894390,
+      "transmittedBytes": 2436721
+    },
+    {
+      "service": "mysql-exporter",
+      "cpuPercent": 0,
+      "memoryBytes": 9318400,
+      "receivedBytes": 1570651,
+      "transmittedBytes": 772525
+    },
+    {
+      "service": "nginx",
+      "cpuPercent": 0,
+      "memoryBytes": 12357632,
+      "receivedBytes": 10506810,
+      "transmittedBytes": 10156047
+    },
+    {
+      "service": "nginx-exporter",
+      "cpuPercent": 0,
+      "memoryBytes": 11468800,
+      "receivedBytes": 278364,
+      "transmittedBytes": 990677
+    },
+    {
+      "service": "phpmyadmin",
+      "cpuPercent": 0.003044189852700491,
+      "memoryBytes": 15777792,
+      "receivedBytes": 3896,
+      "transmittedBytes": 252
+    },
+    {
+      "service": "prometheus",
+      "cpuPercent": 0.3227823240589198,
+      "memoryBytes": 115998720,
+      "receivedBytes": 8959457,
+      "transmittedBytes": 407980
+    }
+  ]
+}

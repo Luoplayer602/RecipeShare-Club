@@ -51,3 +51,71 @@ tests:
       - eval_time: 8m
         alertname: ApiServerErrors
         exp_alerts: []
+  - interval: 15s
+    input_series:
+      - series: 'mysql_up{job="mysql",instance="mysql-exporter:9104"}'
+        values: '0+0x8'
+      - series: 'up{job="mysql",instance="mysql-exporter:9104"}'
+        values: '1+0x8'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: MySqlUnavailable
+        exp_alerts:
+          - exp_labels: {job: mysql, instance: 'mysql-exporter:9104', severity: critical}
+            exp_annotations: {summary: 'MySQL or its metrics exporter is unavailable.'}
+  - interval: 15s
+    input_series:
+      - series: 'up{job="mysql",instance="mysql-exporter:9104"}'
+        values: '0+0x8'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: MySqlUnavailable
+        exp_alerts:
+          - exp_labels: {job: mysql, instance: 'mysql-exporter:9104', severity: critical}
+            exp_annotations: {summary: 'MySQL or its metrics exporter is unavailable.'}
+  - interval: 15s
+    input_series:
+      - series: 'up{job="containers",instance="container-metrics:9273"}'
+        values: '0+0x8'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: ContainerMetricsUnavailable
+        exp_alerts:
+          - exp_labels: {job: containers, instance: 'container-metrics:9273', severity: warning}
+            exp_annotations: {summary: 'Container metrics exporter cannot be scraped.'}
+      - eval_time: 1m
+        alertname: ContainerStatsMissing
+        exp_alerts: []
+  - interval: 15s
+    input_series:
+      - series: 'up{job="containers",instance="container-metrics:9273"}'
+        values: '1+0x8'
+    alert_rule_test:
+      - eval_time: 45s
+        alertname: ContainerStatsMissing
+        exp_alerts: []
+      - eval_time: 1m
+        alertname: ContainerStatsMissing
+        exp_alerts:
+          - exp_labels: {job: containers, severity: warning}
+            exp_annotations: {summary: 'Container exporter is reachable but Docker memory statistics are missing.'}
+  - interval: 15s
+    input_series:
+      - series: 'up{job="containers",instance="container-metrics:9273"}'
+        values: '1+0x8'
+      - series: 'docker_container_mem_usage{job="containers",com_docker_compose_service="mysql"}'
+        values: '100+0x8'
+      - series: 'mysql_up{job="mysql",instance="mysql-exporter:9104"}'
+        values: '1+0x8'
+      - series: 'up{job="mysql",instance="mysql-exporter:9104"}'
+        values: '1+0x8'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: ContainerStatsMissing
+        exp_alerts: []
+      - eval_time: 2m
+        alertname: ContainerMetricsUnavailable
+        exp_alerts: []
+      - eval_time: 2m
+        alertname: MySqlUnavailable
+        exp_alerts: []

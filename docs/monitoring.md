@@ -14,6 +14,7 @@ Trong terminal riêng, chạy `pnpm.cmd dev --hostname 0.0.0.0 --port 3000` từ
 
 - Ứng dụng: http://localhost:8080
 - Dashboard: http://localhost:3002/d/recipeshare-overview
+- Dashboard MySQL/container: http://localhost:3002/d/recipeshare-infrastructure — [hướng dẫn nguồn số liệu và quyền collector](infrastructure-monitoring.md).
 - Prometheus targets: http://localhost:9090/targets
 - Prometheus alerts: http://localhost:9090/alerts
 
@@ -29,14 +30,14 @@ Next.js :3000/api/metrics (Bearer token) ──────→ Prometheus
 Prometheus self-metrics / Grafana metrics ─────→ Prometheus
 ```
 
-`stub_status` ở listener nội bộ 8082 không publish ra host. Endpoint `/api/metrics` bị Nginx chặn (404), truy cập trực tiếp Next.js phải có token (401 nếu sai/thiếu, 503 nếu chưa cấu hình). Prometheus đọc token qua Docker secret, không ghi token vào cấu hình tracked. Không dùng Docker socket hoặc quyền quản trị host.
+`stub_status` ở listener nội bộ 8082 không publish ra host. Endpoint `/api/metrics` bị Nginx chặn (404), truy cập trực tiếp Next.js phải có token (401 nếu sai/thiếu, 503 nếu chưa cấu hình). Prometheus đọc token qua Docker secret, không ghi token vào cấu hình tracked. Phần giám sát container mới dùng [proxy Docker API giới hạn quyền](infrastructure-monitoring.md); Prometheus và Alloy không trực tiếp nhận Docker socket.
 
 Dashboard hiển thị:
 
 - Trạng thái scrape Next.js và trạng thái Nginx.
 - Request API mỗi giây, mã trả về, tỉ lệ 5xx và p95 thời gian handler.
 - Request/kết nối Nginx; CPU và bộ nhớ tiến trình Next.js.
-- Dashboard metrics ban đầu hiển thị bốn target Prometheus, Nginx exporter, Next.js, Grafana. Prometheus hiện scrape thêm Loki và Alloy; xem `up` trong Explore để thấy cả sáu target.
+- Dashboard metrics ban đầu hiển thị bốn target Prometheus, Nginx exporter, Next.js, Grafana. Prometheus hiện scrape thêm Loki, Alloy, MySQL và container metrics; xem `up` trong Explore để thấy cả tám target.
 
 ## Hiểu đúng các số liệu
 
@@ -52,6 +53,8 @@ Histogram và rate cần vài lần scrape (15 giây/lần) và có traffic mớ
 
 Có ba rule: mất scrape Next.js trong một phút, Nginx/exporter không khả dụng trong một phút, API 5xx trên 5% trong hai phút với tối thiểu 20 request/5 phút. Rule đầu có thể do app dừng, token sai hoặc kết nối host lỗi. Xem trạng thái ở Prometheus Alerts; chưa nối Alertmanager/email/thông báo ngoài.
 
+Đã bổ sung ba rule MySQL/container, nâng tổng lên sáu; chi tiết và cách phân biệt scrape với thu thập dữ liệu ở [hướng dẫn infrastructure](infrastructure-monitoring.md).
+
 Prometheus giữ metrics tối đa 7 ngày hoặc khoảng 1 GB theo giới hạn TSDB; WAL và dung lượng tạm có thể cộng thêm. Volume `prometheus_data` và `grafana_data` giữ dữ liệu qua restart/recreate. Không xóa volume để thử lỗi. Dashboard provisioned sửa ở JSON trong `infra/grafana/dashboards`, thay đổi file sẽ được nạp lại; Grafana không lưu đè UI lên nguồn này. Không tự tải plugin bổ sung khi khởi động.
 
 ## Kiểm tra
@@ -64,7 +67,7 @@ docker compose exec prometheus promtool check config /etc/prometheus/prometheus.
 docker compose exec -w /etc/prometheus prometheus promtool test rules alerts.test.yml
 ```
 
-Script monitoring chỉ tạo traffic đọc/không có phiên; không tạo tài khoản hay bài viết. Kiểm tra token bảo vệ, bốn target healthy, route label cố định, provisioning và truy vấn thật từ datasource Grafana.
+Script monitoring chỉ tạo traffic đọc/không có phiên; không tạo tài khoản hay bài viết. Kiểm tra token bảo vệ, tám target healthy, route label cố định, provisioning và truy vấn thật từ datasource Grafana.
 
 Từ `app/`:
 
