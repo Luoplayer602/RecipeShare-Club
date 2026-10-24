@@ -1,3 +1,4 @@
+import {measureApi} from '@/lib/monitoring/metrics'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import { db } from '@/db'
@@ -12,7 +13,7 @@ function respond(body: unknown, status: number) {
   return Response.json(body, { status, headers })
 }
 
-export async function POST(request: Request) {
+async function POSTHandler(request: Request) {
   if (hasInvalidOrigin(request)) {
     return respond({ code: 'INVALID_ORIGIN' }, 403)
   }
@@ -67,3 +68,4 @@ export async function POST(request: Request) {
     return respond({ code: 'MEDIA_CREATION_UNAVAILABLE' }, 503)
   }
 }
+export const POST=measureApi("/api/media/video-url","POST",POSTHandler)

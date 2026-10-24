@@ -1,3 +1,4 @@
+import {measureApi} from '@/lib/monitoring/metrics'
 import { and, eq, inArray } from 'drizzle-orm'
 import { db } from '@/db'
 import { users, userProfiles, mediaAssets } from '@/db/schema'
@@ -6,7 +7,7 @@ import { updateProfileSchema } from '@/lib/profiles/validation'
 import { hasInvalidOrigin, readEditorJson } from '@/lib/posts/request'
 const headers = { 'Cache-Control':'no-store' }
 const respond = (body:unknown,status:number) => Response.json(body,{status,headers})
-export async function PATCH(request:Request) {
+async function PATCHHandler(request:Request) {
   if (hasInvalidOrigin(request)) return respond({code:'INVALID_ORIGIN'},403)
   try {
     const user = await getSessionUser()
@@ -30,3 +31,5 @@ export async function PATCH(request:Request) {
     return result ? respond({message:'Profile saved.'},200) : respond({code:'INVALID_PROFILE_MEDIA'},422)
   } catch { console.error('[profile/update] Failed');return respond({code:'PROFILE_UPDATE_UNAVAILABLE'},503) }
 }
+
+export const PATCH=measureApi("/api/profile","PATCH",PATCHHandler)

@@ -1,3 +1,4 @@
+import {measureApi} from '@/lib/monitoring/metrics'
 import { hasInvalidOrigin } from '@/lib/http/origin'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
@@ -38,7 +39,7 @@ function respond(body: unknown, status: number) {
   return Response.json(body, { status, headers })
 }
 
-export async function POST(request: Request) {
+async function POSTHandler(request: Request) {
   if (hasInvalidOrigin(request)) {
     return respond({ code: 'INVALID_ORIGIN' }, 403)
   }
@@ -167,7 +168,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET(request: Request) {
+async function GETHandler(request: Request) {
   const parsed = listPostsQuerySchema.safeParse(
     Object.fromEntries(new URL(request.url).searchParams),
   )
@@ -304,3 +305,7 @@ export async function GET(request: Request) {
     return respond({ code: 'POST_LIST_UNAVAILABLE' }, 503)
   }
 }
+
+export const POST=measureApi("/api/posts","POST",POSTHandler)
+
+export const GET=measureApi("/api/posts","GET",GETHandler)

@@ -1,3 +1,4 @@
+import {measureApi} from '@/lib/monitoring/metrics'
 import { open } from 'node:fs/promises'
 import type { FileHandle } from 'node:fs/promises'
 import { Readable } from 'node:stream'
@@ -29,7 +30,7 @@ function respond(code: string, status: number) {
   return Response.json({ code }, { status, headers })
 }
 
-export async function GET(request: Request, context: Context) {
+async function GETHandler(request: Request, context: Context) {
   let handle: FileHandle | null = null
 
   try {
@@ -151,3 +152,5 @@ export async function GET(request: Request, context: Context) {
     }
   }
 }
+
+export const GET=measureApi("/api/media/[id]/file","GET",GETHandler)

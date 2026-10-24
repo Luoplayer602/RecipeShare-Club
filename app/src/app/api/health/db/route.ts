@@ -1,10 +1,11 @@
+import {measureApi} from '@/lib/monitoring/metrics'
 import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { userTitles } from '@/db/schema'
 
 
 
-export async function GET() {
+async function GETHandler() {
   const headers = { 'Cache-Control': 'no-store' }
 
   try {
@@ -32,3 +33,4 @@ export async function GET() {
     )
   }
 }
+export const GET=measureApi("/api/health/db","GET",GETHandler)

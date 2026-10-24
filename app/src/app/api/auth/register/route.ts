@@ -1,3 +1,4 @@
+import {measureApi} from '@/lib/monitoring/metrics'
 import { randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
@@ -40,7 +41,7 @@ function getSafeErrorSummary(error: unknown) {
   return summary
 }
 
-export async function POST(request: Request) {
+async function POSTHandler(request: Request) {
   const contentType = request.headers
     .get('content-type')
     ?.split(';')[0]
@@ -138,3 +139,5 @@ export async function POST(request: Request) {
     return respond({ code: 'REGISTRATION_FAILED' }, 500)
   }
 }
+
+export const POST=measureApi("/api/auth/register","POST",POSTHandler)

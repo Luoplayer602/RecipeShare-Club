@@ -1,8 +1,9 @@
+import {measureApi} from '@/lib/monitoring/metrics'
 import { and, count, eq, isNull } from 'drizzle-orm'
 import { db } from '@/db'
 import { posts, savedPosts } from '@/db/schema'
 import { getSessionUser } from '@/lib/auth/session'
-export async function GET() {
+async function GETHandler() {
   const headers = { 'Cache-Control': 'no-store' }
   try {
     const user = await getSessionUser()
@@ -11,3 +12,5 @@ export async function GET() {
     return Response.json({ total: Number(row.total) }, { headers })
   } catch { return Response.json({ code: 'SAVED_POSTS_UNAVAILABLE' }, { status: 503, headers }) }
 }
+
+export const GET=measureApi("/api/saved-posts","GET",GETHandler)

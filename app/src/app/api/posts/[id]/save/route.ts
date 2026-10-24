@@ -1,3 +1,4 @@
+import {measureApi} from '@/lib/monitoring/metrics'
 import { hasInvalidOrigin } from '@/lib/http/origin'
 import { and, eq, isNull } from 'drizzle-orm'
 import { z } from 'zod'
@@ -29,6 +30,6 @@ async function handle(request: Request, context: Context, mutation?: 'save' | 'r
     return respond({ saved: Boolean(saved) })
   } catch { return respond({ code: 'SAVE_UNAVAILABLE' }, 503) }
 }
-export const GET = (request: Request, context: Context) => handle(request, context)
-export const PUT = (request: Request, context: Context) => handle(request, context, 'save')
-export const DELETE = (request: Request, context: Context) => handle(request, context, 'remove')
+export const GET = measureApi("/api/posts/[id]/save","GET",(request: Request, context: Context) => handle(request, context))
+export const PUT = measureApi("/api/posts/[id]/save","PUT",(request: Request, context: Context) => handle(request, context, 'save'))
+export const DELETE = measureApi("/api/posts/[id]/save","DELETE",(request: Request, context: Context) => handle(request, context, 'remove'))

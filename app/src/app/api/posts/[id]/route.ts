@@ -1,3 +1,4 @@
+import {measureApi} from '@/lib/monitoring/metrics'
 import { and, eq, inArray, isNull } from 'drizzle-orm'
 import { db } from '@/db'
 import { mediaAssets, posts, users, userTitles } from '@/db/schema'
@@ -14,7 +15,7 @@ function respond(body: unknown, status: number) {
   return Response.json(body, { status, headers })
 }
 
-export async function GET(_request: Request, context: Context) {
+async function GETHandler(_request: Request, context: Context) {
   try {
     const { id } = await context.params
     const parsedId = postIdSchema.safeParse(id)
@@ -110,3 +111,4 @@ export async function GET(_request: Request, context: Context) {
     return respond({ code: 'POST_READ_UNAVAILABLE' }, 503)
   }
 }
+export const GET=measureApi("/api/posts/[id]","GET",GETHandler)

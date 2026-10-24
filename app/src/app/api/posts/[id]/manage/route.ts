@@ -1,3 +1,4 @@
+import {measureApi} from '@/lib/monitoring/metrics'
 import {and,eq,isNull} from 'drizzle-orm'
 import {z} from 'zod'
 import {db} from '@/db'
@@ -7,7 +8,7 @@ import {hasInvalidOrigin,readEditorJson} from '@/lib/posts/request'
 import {postIdSchema} from '@/lib/posts/post-id'
 import {saveDraft} from '@/lib/posts/save-draft'
 const respond=(body:unknown,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'no-store'}})
-export async function PATCH(request:Request,context:{params:Promise<{id:string}>}){
+async function PATCHHandler(request:Request,context:{params:Promise<{id:string}>}){
   if(hasInvalidOrigin(request))return respond({code:'INVALID_ORIGIN'},403)
   try{
     const user=await getSessionUser();if(!user)return respond({code:'UNAUTHENTICATED'},401)
@@ -30,3 +31,5 @@ export async function PATCH(request:Request,context:{params:Promise<{id:string}>
     return respond(result,result.status)
   }catch{return respond({code:'POST_MANAGEMENT_UNAVAILABLE'},503)}
 }
+
+export const PATCH=measureApi("/api/posts/[id]/manage","PATCH",PATCHHandler)

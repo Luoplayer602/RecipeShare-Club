@@ -1,0 +1,24 @@
+groups:
+  - name: recipeshare
+    rules:
+      - alert: NextJsMetricsUnavailable
+        expr: up{job="recipeshare"} == 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Next.js metrics cannot be scraped (check app, token or host connectivity)."
+      - alert: NginxUnavailable
+        expr: nginx_up == 0 or up{job="nginx"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Nginx status or its exporter is unavailable."
+      - alert: ApiServerErrors
+        expr: sum(rate(recipeshare_api_requests_total{status=~"5.."}[5m])) / clamp_min(sum(rate(recipeshare_api_requests_total[5m])), 0.001) > 0.05 and sum(increase(recipeshare_api_requests_total[5m])) >= 20
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API 5xx ratio exceeds 5% with at least 20 requests in five minutes."

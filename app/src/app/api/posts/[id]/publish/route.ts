@@ -1,3 +1,4 @@
+import {measureApi} from '@/lib/monitoring/metrics'
 import { getSessionUser } from '@/lib/auth/session'
 import { postIdSchema } from '@/lib/posts/post-id'
 import { publishPost } from '@/lib/posts/publish-post'
@@ -13,7 +14,7 @@ function respond(body: unknown, status: number) {
   return Response.json(body, { status, headers })
 }
 
-export async function POST(request: Request, context: Context) {
+async function POSTHandler(request: Request, context: Context) {
   if (hasInvalidOrigin(request)) {
     return respond({ code: 'INVALID_ORIGIN' }, 403)
   }
@@ -56,3 +57,4 @@ export async function POST(request: Request, context: Context) {
     return respond({ code: 'POST_PUBLISH_UNAVAILABLE' }, 503)
   }
 }
+export const POST=measureApi("/api/posts/[id]/publish","POST",POSTHandler)

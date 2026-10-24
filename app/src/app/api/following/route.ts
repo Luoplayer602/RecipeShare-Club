@@ -1,3 +1,4 @@
+import {measureApi} from '@/lib/monitoring/metrics'
 import { and, asc, count, desc, eq, exists, isNull, ne, not, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
@@ -5,7 +6,7 @@ import { users, userTitles, posts, userFollows } from '@/db/schema'
 import { getSessionUser } from '@/lib/auth/session'
 const querySchema = z.strictObject({ q: z.string().trim().max(100).default(''), page: z.coerce.number().int().min(1).max(10000).default(1) })
 const headers = { 'Cache-Control': 'private, no-store' }
-export async function GET(request: Request) {
+async function GETHandler(request: Request) {
   const parsed = querySchema.safeParse(Object.fromEntries(new URL(request.url).searchParams))
   if (!parsed.success) return Response.json({ code: 'INVALID_QUERY' }, { status: 400, headers })
   try {
@@ -28,3 +29,5 @@ export async function GET(request: Request) {
     return Response.json(result, { headers })
   } catch { return Response.json({ code: 'FOLLOWING_UNAVAILABLE' }, { status: 503, headers }) }
 }
+
+export const GET=measureApi("/api/following","GET",GETHandler)

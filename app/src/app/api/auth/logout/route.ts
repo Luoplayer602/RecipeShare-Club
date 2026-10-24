@@ -1,9 +1,10 @@
+import {measureApi} from '@/lib/monitoring/metrics'
 import { hasInvalidOrigin } from '@/lib/http/origin'
 import { deleteSession } from '@/lib/auth/session'
 
 const headers = { 'Cache-Control': 'no-store' }
 
-export async function POST(request: Request) {
+async function POSTHandler(request: Request) {
   if (hasInvalidOrigin(request)) {
     return Response.json(
       { code: 'INVALID_ORIGIN' },
@@ -25,3 +26,4 @@ export async function POST(request: Request) {
     )
   }
 }
+export const POST=measureApi("/api/auth/logout","POST",POSTHandler)

@@ -1,3 +1,4 @@
+import {measureApi} from '@/lib/monitoring/metrics'
 import { hasInvalidOrigin } from '@/lib/http/origin'
 import { and, count, eq } from 'drizzle-orm'
 import { db } from '@/db'
@@ -27,6 +28,6 @@ async function handle(request: Request, context: Context, mutation?: 'follow' | 
     return respond({ following: Boolean(relation), followerCount: Number(followers.total), followingCount: Number(following.total), own, authenticated: Boolean(viewer) })
   } catch { return respond({ code: 'FOLLOW_UNAVAILABLE' }, 503) }
 }
-export const GET = (request: Request, context: Context) => handle(request, context)
-export const PUT = (request: Request, context: Context) => handle(request, context, 'follow')
-export const DELETE = (request: Request, context: Context) => handle(request, context, 'remove')
+export const GET = measureApi("/api/profiles/[username]/follow","GET",(request: Request, context: Context) => handle(request, context))
+export const PUT = measureApi("/api/profiles/[username]/follow","PUT",(request: Request, context: Context) => handle(request, context, 'follow'))
+export const DELETE = measureApi("/api/profiles/[username]/follow","DELETE",(request: Request, context: Context) => handle(request, context, 'remove'))

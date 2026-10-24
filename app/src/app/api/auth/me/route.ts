@@ -1,8 +1,9 @@
+import {measureApi} from '@/lib/monitoring/metrics'
 import { getSessionUser } from '@/lib/auth/session'
 
 const headers = { 'Cache-Control': 'no-store' }
 
-export async function GET() {
+async function GETHandler() {
   try {
     const user = await getSessionUser()
 
@@ -21,3 +22,4 @@ export async function GET() {
     )
   }
 }
+export const GET=measureApi("/api/auth/me","GET",GETHandler)

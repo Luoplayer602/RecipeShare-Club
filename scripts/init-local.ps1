@@ -23,3 +23,5 @@ if (-not (Test-Path -LiteralPath $envPath)) {
     Write-Output 'Created .env'
 }
 Write-Output 'Local configuration is ready; existing secrets were preserved.'
+
+& (Join-Path $PSScriptRoot 'init-monitoring.ps1')

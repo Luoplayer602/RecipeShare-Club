@@ -1,3 +1,4 @@
+import {measureApi} from '@/lib/monitoring/metrics'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
@@ -44,7 +45,7 @@ function findByColumn(identifier: LoginIdentifier) {
   return eq(users.username, identifier.value)
 }
 
-export async function POST(request: Request) {
+async function POSTHandler(request: Request) {
   const contentType = request.headers
     .get('content-type')
     ?.split(';')[0]
@@ -153,3 +154,4 @@ export async function POST(request: Request) {
     return respond({ code: 'LOGIN_UNAVAILABLE' }, 503)
   }
 }
+export const POST=measureApi("/api/auth/login","POST",POSTHandler)

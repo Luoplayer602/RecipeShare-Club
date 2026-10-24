@@ -1,3 +1,4 @@
+import {measureApi} from '@/lib/monitoring/metrics'
 import { randomUUID } from 'node:crypto'
 import { rename } from 'node:fs/promises'
 import { db } from '@/db'
@@ -20,7 +21,7 @@ function respond(body: unknown, status: number) {
   return Response.json(body, { status, headers })
 }
 
-export async function POST(request: Request) {
+async function POSTHandler(request: Request) {
   if (hasInvalidOrigin(request)) {
     return respond({ code: 'INVALID_ORIGIN' }, 403)
   }
@@ -117,3 +118,5 @@ export async function POST(request: Request) {
     }))
   }
 }
+
+export const POST=measureApi("/api/media/upload","POST",POSTHandler)

@@ -1,10 +1,11 @@
+import {measureApi} from '@/lib/monitoring/metrics'
 import { and, asc, count, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { userFollows, users, userTitles, userProfiles, posts, recipeDetails, postTags, tags } from '@/db/schema'
 import { getSessionUser } from '@/lib/auth/session'
 import { profileUsername, profileQuery } from '@/lib/profiles/validation'
 const headers = { 'Cache-Control': 'private, no-store' }
-export async function GET(request: Request, context: { params: Promise<{ username: string }> }) {
+async function GETHandler(request: Request, context: { params: Promise<{ username: string }> }) {
   const username = profileUsername.safeParse((await context.params).username)
   const query = profileQuery.safeParse(Object.fromEntries(new URL(request.url).searchParams))
   if (!username.success || !query.success) return Response.json({ code: 'INVALID_QUERY' }, { status:400, headers })
@@ -45,3 +46,5 @@ export async function GET(request: Request, context: { params: Promise<{ usernam
     return Response.json(result.body,{status:result.status,headers})
   } catch { console.error('[profile/read] Failed'); return Response.json({code:'PROFILE_UNAVAILABLE'},{status:503,headers}) }
 }
+
+export const GET=measureApi("/api/profiles/[username]","GET",GETHandler)

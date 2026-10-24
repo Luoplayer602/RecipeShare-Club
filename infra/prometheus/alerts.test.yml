@@ -1,0 +1,53 @@
+rule_files: [alerts.yml]
+evaluation_interval: 15s
+tests:
+  - interval: 15s
+    input_series:
+      - series: 'up{job="recipeshare",instance="host.docker.internal:3000"}'
+        values: '0+0x8'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: NextJsMetricsUnavailable
+        exp_alerts:
+          - exp_labels:
+              job: recipeshare
+              instance: host.docker.internal:3000
+              severity: warning
+            exp_annotations:
+              summary: "Next.js metrics cannot be scraped (check app, token or host connectivity)."
+  - interval: 15s
+    input_series:
+      - series: 'recipeshare_api_requests_total{status="200"}'
+        values: '0+12x40'
+      - series: 'recipeshare_api_requests_total{status="500"}'
+        values: '0+3x40'
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: ApiServerErrors
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+            exp_annotations:
+              summary: "API 5xx ratio exceeds 5% with at least 20 requests in five minutes."
+  - interval: 15s
+    input_series:
+      - series: 'up{job="nginx",instance="nginx-exporter:9113"}'
+        values: '0+0x8'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: NginxUnavailable
+        exp_alerts:
+          - exp_labels:
+              job: nginx
+              instance: nginx-exporter:9113
+              severity: critical
+            exp_annotations:
+              summary: "Nginx status or its exporter is unavailable."
+  - interval: 15s
+    input_series:
+      - series: 'recipeshare_api_requests_total{status="500"}'
+        values: '0+0.1x40'
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: ApiServerErrors
+        exp_alerts: []

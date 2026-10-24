@@ -73,7 +73,7 @@ Lệnh PowerShell trên chỉ áp dụng execution policy cho tiến trình ch�
 - Nginx non-root, filesystem chỉ đọc, bỏ capabilities, security headers, reverse proxy tới Next.js trên host và healthcheck.
 - Mạng dữ liệu nội bộ; log Docker xoay vòng tối đa 3 file × 10 MB mỗi service.
 
-Nginx chuyển tiếp frontend và API tới `host.docker.internal:3000`, hỗ trợ streaming và WebSocket hot reload. Next.js chưa được đóng gói Docker. Prometheus, Grafana, Loki và Alloy là các bước tiếp theo; chưa được coi là hoàn thành toàn bộ phần hạ tầng của đề.
+Nginx chuyển tiếp frontend và API tới `host.docker.internal:3000`, hỗ trợ streaming và WebSocket hot reload. Next.js chưa được đóng gói Docker. Prometheus + Grafana đã có dashboard tự nạp, metrics API/tiến trình và Nginx exporter. Xem [hướng dẫn giám sát](docs/monitoring.md) để đăng nhập và kiểm tra. Loki/Alloy là bước tiếp theo; chưa được coi là hoàn thành toàn bộ phần hạ tầng của đề.
 
 Image được ghim tag phiên bản; chưa ghim digest. Nguồn cấu hình: [MySQL official image](https://hub.docker.com/_/mysql), [phpMyAdmin official image](https://hub.docker.com/_/phpmyadmin), [Nginx unprivileged](https://hub.docker.com/r/nginxinc/nginx-unprivileged).
 
@@ -97,3 +97,7 @@ Khi báo không kết nối được Docker Engine, mở Docker Desktop và đ�
 Cập nhật ngày 21/10/2026: đã kiểm tra Next.js trả HTTP 200 trên cổng 3001, đăng nhập phpMyAdmin, publish MySQL trên localhost:3307 và kết nối bằng Node.js/mysql2 với tài khoản `recipe_app`. Database nghiệp vụ vẫn trống. TypeScript và ESLint của `app/` kiểm tra thành công; chưa kiểm thử build production hoặc luồng xác thực.
 
 Cập nhật 24/10/2026: đã chuyển Nginx từ trang tĩnh sang reverse proxy cho Next.js chạy trên Windows. Kiểm tra DB/API và đăng nhập/đăng xuất qua trình duyệt ở cổng 8080 đã đạt; các kiểm tra lịch sử bên trên mô tả trạng thái tại thời điểm tương ứng.
+
+## Giám sát local
+
+Grafana: http://localhost:3002/d/recipeshare-overview — user `admin`, mật khẩu local tại `.secrets/grafana_admin_password.txt`. Prometheus: http://localhost:9090. Chạy `scripts/init-local.ps1` để tạo secret và đồng bộ metrics token trước `docker compose up`. Xem [hướng dẫn và minh chứng](docs/monitoring.md). Next.js tiếp tục chạy trực tiếp trên máy để phát triển.
