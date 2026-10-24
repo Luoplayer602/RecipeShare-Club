@@ -1,4 +1,5 @@
 import {collectDefaultMetrics,Counter,Histogram,Registry} from '@prometheus-io/client'
+import {logEvent,requestId} from './logging.ts'
 
 type Metrics={registry:Registry;requests:Counter<'route'|'method'|'status'>;duration:Histogram<'route'|'method'|'status'>}
 const runtime=globalThis as typeof globalThis & {recipeShareMetrics?:Metrics}
@@ -18,8 +19,10 @@ export function measureApi<Args extends unknown[]>(route:string,method:string,ha
     const started=performance.now();let status='500'
     try {const response=await handler(...args);status=String(response.status);return response}
     finally {
+      const elapsedMs=performance.now()-started
+      logEvent({event:'api_request',level:Number(status)>=500?'error':Number(status)>=400?'warn':'info',route,method,status:Number(status),duration_ms:Math.round(elapsedMs*100)/100,request_id:requestId(args[0])})
       // Observability must never change a handler's result or mask its exception.
-      try {const elapsed=(performance.now()-started)/1000,metrics=getMetrics(),labels={route,method,status};metrics.requests.inc(labels);metrics.duration.observe(labels,elapsed)}catch{}
+      try {const elapsed=elapsedMs/1000,metrics=getMetrics(),labels={route,method,status};metrics.requests.inc(labels);metrics.duration.observe(labels,elapsed)}catch{}
     }
   }
 }

@@ -73,7 +73,7 @@ Lệnh PowerShell trên chỉ áp dụng execution policy cho tiến trình ch�
 - Nginx non-root, filesystem chỉ đọc, bỏ capabilities, security headers, reverse proxy tới Next.js trên host và healthcheck.
 - Mạng dữ liệu nội bộ; log Docker xoay vòng tối đa 3 file × 10 MB mỗi service.
 
-Nginx chuyển tiếp frontend và API tới `host.docker.internal:3000`, hỗ trợ streaming và WebSocket hot reload. Next.js chưa được đóng gói Docker. Prometheus + Grafana đã có dashboard tự nạp, metrics API/tiến trình và Nginx exporter. Xem [hướng dẫn giám sát](docs/monitoring.md) để đăng nhập và kiểm tra. Loki/Alloy là bước tiếp theo; chưa được coi là hoàn thành toàn bộ phần hạ tầng của đề.
+Nginx chuyển tiếp frontend và API tới `host.docker.internal:3000`, hỗ trợ streaming và WebSocket hot reload. Next.js chưa được đóng gói Docker. Prometheus + Grafana đã có dashboard tự nạp, metrics API/tiến trình và Nginx exporter. Xem [hướng dẫn giám sát](docs/monitoring.md) để đăng nhập và kiểm tra. Loki + Alloy thu log Nginx và sự kiện API/server Next.js; xem [hướng dẫn log và LogQL](docs/logging.md). Khi tạo lại Alloy, restart Nginx để cập nhật địa chỉ collector.
 
 Image được ghim tag phiên bản; chưa ghim digest. Nguồn cấu hình: [MySQL official image](https://hub.docker.com/_/mysql), [phpMyAdmin official image](https://hub.docker.com/_/phpmyadmin), [Nginx unprivileged](https://hub.docker.com/r/nginxinc/nginx-unprivileged).
 

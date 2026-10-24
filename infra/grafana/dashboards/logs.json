@@ -1,0 +1,207 @@
+{
+  "uid": "recipeshare-logs",
+  "title": "RecipeShare — Logs",
+  "schemaVersion": 39,
+  "version": 1,
+  "tags": [
+    "recipeshare",
+    "logs"
+  ],
+  "timezone": "browser",
+  "refresh": "15s",
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "API requests / second",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "recipeshare-loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "recipeshare-loki"
+          },
+          "expr": "sum(rate({service_name=\"nextjs\"} | json | event=\"api_request\" | __error__=\"\" [$__auto]))",
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "min": 0
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "title": "API 5xx / second",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "recipeshare-loki"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "recipeshare-loki"
+          },
+          "expr": "sum(rate({service_name=\"nextjs\"} | json | event=\"api_request\" | status >= 500 | __error__=\"\" [$__auto]))",
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "min": 0
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "title": "Next.js — API and server events",
+      "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "recipeshare-loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 7,
+        "w": 24,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "recipeshare-loki"
+          },
+          "expr": "{service_name=\"nextjs\"} | json",
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "enableLogDetails": true
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "title": "Nginx — access",
+      "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "recipeshare-loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 17,
+        "w": 24,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "recipeshare-loki"
+          },
+          "expr": "{service_name=\"nginx\",kind=\"access\"} | json",
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "enableLogDetails": true
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "title": "Nginx — errors",
+      "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "recipeshare-loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 27,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "recipeshare-loki"
+          },
+          "expr": "{service_name=\"nginx\",kind=\"error\"}",
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "enableLogDetails": true
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    }
+  ]
+}

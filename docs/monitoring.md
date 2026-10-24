@@ -1,6 +1,6 @@
 # Prometheus và Grafana
 
-Next.js vẫn chạy trên Windows cổng 3000. Compose chạy Nginx, exporter, Prometheus và Grafana; MySQL/phpMyAdmin giữ cách chạy cũ. Chưa thêm Loki/Alloy ở mốc này.
+Next.js vẫn chạy trên Windows cổng 3000. Compose chạy Nginx, exporter, Prometheus và Grafana; MySQL/phpMyAdmin giữ cách chạy cũ. Loki + Alloy đã được bổ sung; xem [thu gom và truy vấn log](logging.md).
 
 ## Khởi chạy
 
@@ -36,7 +36,7 @@ Dashboard hiển thị:
 - Trạng thái scrape Next.js và trạng thái Nginx.
 - Request API mỗi giây, mã trả về, tỉ lệ 5xx và p95 thời gian handler.
 - Request/kết nối Nginx; CPU và bộ nhớ tiến trình Next.js.
-- Tình trạng bốn target Prometheus, Nginx exporter, Next.js, Grafana.
+- Dashboard metrics ban đầu hiển thị bốn target Prometheus, Nginx exporter, Next.js, Grafana. Prometheus hiện scrape thêm Loki và Alloy; xem `up` trong Explore để thấy cả sáu target.
 
 ## Hiểu đúng các số liệu
 

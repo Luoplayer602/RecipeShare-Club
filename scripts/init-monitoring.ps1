@@ -29,3 +29,8 @@ if ($match.Success) {
     Write-Output 'Configured metrics token in app/.env.local; existing settings preserved.'
 }
 Write-Output 'Monitoring secrets are ready. No secret values were printed.'
+$appText = [IO.File]::ReadAllText($appEnvPath)
+if ($appText -notmatch '(?m)^LOG_SYSLOG_PORT=') {
+    [IO.File]::AppendAllText($appEnvPath, "`nLOG_SYSLOG_PORT=1514`n", [Text.UTF8Encoding]::new($false))
+    Write-Output 'Enabled local application syslog on UDP 1514; restart Next.js to apply.'
+}

@@ -1,6 +1,6 @@
 # Nginx reverse proxy trong giai đoạn phát triển
 
-Next.js chạy trên máy ở cổng 3000. Nginx chạy bằng Docker Desktop và chuyển tiếp cả giao diện, API, media và WebSocket tới `host.docker.internal:3000`. MySQL/phpMyAdmin giữ cấu hình hiện tại. Chưa đóng gói Next.js, chưa thêm hệ thống giám sát.
+Next.js chạy trên máy ở cổng 3000. Nginx chạy bằng Docker Desktop và chuyển tiếp cả giao diện, API, media và WebSocket tới `host.docker.internal:3000`. MySQL/phpMyAdmin giữ cấu hình hiện tại. Next.js chưa được đóng gói; đã có [metrics](monitoring.md) và [log Loki + Alloy](logging.md).
 
 ```text
 Trình duyệt → localhost:8080 → Nginx (Docker) → host.docker.internal:3000 → Next.js (Windows)
@@ -15,6 +15,7 @@ Từ thư mục gốc, khởi tạo `.env` và secrets nếu chưa có theo READ
 ```powershell
 docker compose config --quiet
 docker compose up -d --wait
+docker compose restart nginx
 ```
 
 Trong terminal riêng:
