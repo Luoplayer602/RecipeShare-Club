@@ -32,9 +32,9 @@ server {
     ssl_session_timeout 1d;
 
     access_log /dev/stdout observability;
-    access_log syslog:server=alloy:1515,tag=nginx observability;
+    access_log syslog:server=promtail:1515,tag=nginx observability;
     error_log /dev/stderr warn;
-    error_log syslog:server=alloy:1516,tag=nginx warn;
+    error_log syslog:server=promtail:1516,tag=nginx warn;
     client_max_body_size 51m;
     client_body_timeout 120s;
     send_timeout 120s;

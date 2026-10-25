@@ -48,13 +48,13 @@ cd app
 pnpm.cmd dev --hostname 0.0.0.0 --port 3000
 ```
 
-Production cập nhật bằng `up -d --build --wait` với đủ hai file Compose như trên. Sau khi tạo lại app hoặc Alloy, restart Nginx để phân giải lại địa chỉ upstream/syslog:
+Production cập nhật bằng `up -d --build --wait` với đủ hai file Compose như trên. Sau khi tạo lại app hoặc Promtail, restart Nginx để phân giải lại địa chỉ upstream/syslog:
 
 ```powershell
 docker compose --env-file .env.production.local -f compose.yaml -f compose.production.yaml restart nginx
 ```
 
-Prometheus production scrape `app:3000/api/metrics` trong mạng Compose. Log API gửi tới Alloy qua mạng container. Các dashboard và cấu hình MySQL/container monitoring được giữ nguyên.
+Prometheus production scrape `app:3000/api/metrics` trong mạng Compose và có chín target, gồm Promtail. Log API gửi tới Alloy; log Nginx gửi riêng tới Promtail qua mạng container. Cả hai đẩy log vào Loki, không thu trùng; xem [cấu hình và kiểm chứng](logging.md). Các dashboard và cấu hình MySQL/container monitoring được giữ nguyên.
 
 ## Kiểm tra môi trường sạch
 
@@ -64,6 +64,6 @@ Tạo env riêng từ mẫu, đổi `COMPOSE_PROJECT_NAME` thành `recipeshare-c
 node scripts/test-production.mjs <duong-dan-env-rieng>
 ```
 
-Script kiểm tra TLS, HTTP redirect, cookie Secure, origin guard, upload/xuất bản/tìm kiếm kết hợp, quyền runtime và image không có cấu hình local. Sau đó restart riêng MySQL, recreate app và xác nhận session/bài/ảnh còn nguyên; kiểm tra tám target metrics và log Nginx/Next.js đối chiếu theo request ID. Nó chỉ xóa fixture của tài khoản ngẫu nhiên do lượt kiểm thử tạo ra; giữ volume của project và không chạm project dev.
+Script kiểm tra TLS, HTTP redirect, cookie Secure, origin guard, upload/xuất bản/tìm kiếm kết hợp, quyền runtime và image không có cấu hình local. Sau đó restart riêng MySQL, recreate app và xác nhận session/bài/ảnh còn nguyên; kiểm tra chín target metrics và log Nginx/Next.js đối chiếu theo request ID. Nó chỉ xóa fixture của tài khoản ngẫu nhiên do lượt kiểm thử tạo ra; giữ volume của project và không chạm project dev.
 
-Lượt kiểm tra 25/10/2026 dùng project `recipeshare-clean-20261025`, env local ở `.tasks/production-clean.env`; tất cả kiểm tra trên đã đạt. Đây là hướng dẫn vận hành, chưa phải báo cáo đề tài hay bộ minh chứng trình bày.
+Lượt kiểm tra 25/10/2026 dùng project `recipeshare-clean-20261025`, env local ở `.tasks/production-clean.env`; các kiểm tra lifecycle đã đạt trước khi bổ sung Promtail. Project này sau đó đã nhận dữ liệu sử dụng thật; không coi volume là dữ liệu thử có thể xóa. Khi thêm Promtail, kiểm thử riêng `test-parallel-logging.mjs` và kiểm tra đọc bài/ảnh đã đạt mà không tạo hoặc sửa nội dung. Đây là hướng dẫn vận hành, chưa phải báo cáo đề tài hay bộ minh chứng trình bày.

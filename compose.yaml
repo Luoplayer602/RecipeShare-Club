@@ -11,7 +11,7 @@ services:
     image: nginxinc/nginx-unprivileged:1.28.0-alpine
     restart: unless-stopped
     depends_on:
-      alloy:
+      promtail:
         condition: service_healthy
     ports:
       - "${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-8080}:8080"
@@ -215,11 +215,37 @@ services:
     networks: [monitoring]
     logging: *logging
 
+  promtail:
+    image: grafana/promtail:3.6.0
+    user: "10001:10001"
+    restart: unless-stopped
+    command: [-config.file=/etc/promtail/config.yml, -config.expand-env=true]
+    environment:
+      LOG_ENVIRONMENT: development
+    depends_on:
+      loki:
+        condition: service_started
+    volumes:
+      - ./infra/promtail/config.yml:/etc/promtail/config.yml:ro
+    read_only: true
+    tmpfs: ["/tmp:uid=10001,gid=10001,size=16m,mode=0700"]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks: [monitoring]
+    healthcheck:
+      test: [CMD, /bin/bash, -c, 'exec 3<>/dev/tcp/127.0.0.1/9080; printf "GET /ready HTTP/1.0\r\n\r\n" >&3; read -r status <&3; [[ "$$status" == *" 200 "* ]]']
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    logging: *logging
+
   alloy:
     image: grafana/alloy:v1.21.2
     user: alloy
     restart: unless-stopped
     command: [run, --server.http.listen-addr=0.0.0.0:12345, --storage.path=/var/lib/alloy, /etc/alloy/config.alloy]
+    environment:
+      LOG_ENVIRONMENT: development
     ports:
       - "127.0.0.1:${SYSLOG_PORT:-1514}:1514/udp"
     volumes:

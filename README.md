@@ -13,7 +13,7 @@ Toàn bộ giao diện, API, database, reverse proxy, giám sát và thu thập 
 | Nginx | Reverse proxy, HTTPS và security headers |
 | Prometheus + Grafana | Thu thập metrics và hiển thị dashboard |
 | MySQL exporter + Telegraf | Giám sát database và tài nguyên container |
-| Loki + Alloy | Thu thập, lưu trữ và truy vấn log |
+| Loki + Promtail + Alloy | Promtail thu log Nginx, Alloy thu log Next.js, Loki lưu trữ log |
 
 ## Yêu cầu
 
@@ -126,7 +126,7 @@ Dashboard được nạp tự động trong Grafana:
 - MySQL và tài nguyên container: `/d/recipeshare-infrastructure`.
 - Log tập trung: `/d/recipeshare-logs`.
 
-Prometheus thu thập tám nhóm target: `prometheus`, `nginx`, `recipeshare`, `grafana`, `loki`, `alloy`, `mysql`, `containers`. Metrics ứng dụng được đọc qua `app:3000/api/metrics` trong mạng Compose; endpoint không được mở qua Nginx.
+Prometheus thu thập chín nhóm target: `prometheus`, `nginx`, `recipeshare`, `grafana`, `loki`, `alloy`, `promtail`, `mysql`, `containers`. Metrics ứng dụng được đọc qua `app:3000/api/metrics` trong mạng Compose; endpoint không được mở qua Nginx.
 
 Trong Grafana Explore, chọn datasource **Loki** và khoảng thời gian có traffic. Ví dụ LogQL:
 
@@ -142,7 +142,9 @@ Trong Grafana Explore, chọn datasource **Loki** và khoảng thời gian có t
 {service_name="nginx", kind="access"} | json | status >= 400 | __error__=""
 ```
 
-Nginx và API ghi request ID để đối chiếu sự kiện. Log API không ghi body, cookie, mật khẩu hoặc query string. Alloy chuyển log vào Loki.
+Nginx chỉ gửi log access/error qua Promtail; Next.js chỉ gửi log qua Alloy. Cả hai chuyển log vào cùng Loki, gắn nhãn `collector="promtail"` hoặc `collector="alloy"` để phân biệt, không thu trùng nguồn. Nginx và API ghi request ID để đối chiếu sự kiện. Log API không ghi body, cookie, mật khẩu hoặc query string; Promtail che query trong log lỗi Nginx.
+
+Promtail được giữ để đáp ứng thành phần trong đề thực hành; phần mềm đã hết hỗ trợ từ 02/03/2026. Cấu hình và cách kiểm chứng hai collector: [hướng dẫn log](docs/logging.md).
 
 ## 6. Cập nhật và vận hành
 
@@ -154,14 +156,14 @@ docker compose @composeArgs restart nginx
 docker compose @composeArgs ps -a
 ```
 
-Restart Nginx sau khi tạo lại `app` hoặc `alloy` để phân giải lại địa chỉ upstream và collector. Service `migrate` áp dụng migration chưa chạy trong quy trình khởi động/cập nhật.
+Restart Nginx sau khi tạo lại `app` hoặc `promtail` để phân giải lại địa chỉ upstream và collector. Service `migrate` áp dụng migration chưa chạy trong quy trình khởi động/cập nhật.
 
 Kiểm tra trạng thái và log:
 
 ```powershell
 Invoke-WebRequest http://localhost:18080/health/live
 docker compose @composeArgs logs --tail 100 app nginx mysql migrate
-docker compose @composeArgs logs --tail 100 prometheus grafana alloy loki
+docker compose @composeArgs logs --tail 100 prometheus grafana promtail alloy loki
 ```
 
 Liveness chỉ xác nhận Nginx đang chạy. Kiểm tra kết nối database qua `/api/health/db` trên website HTTPS. Nếu đã đổi cổng, thay địa chỉ tương ứng trong lệnh kiểm tra.
@@ -195,4 +197,4 @@ Mở terminal mới cần khai báo lại `$composeEnv` và `$composeArgs` như 
 | Không thấy dữ liệu cũ | Kiểm tra đúng file env và `COMPOSE_PROJECT_NAME`; không xóa hoặc khởi tạo lại volume |
 | Migration hoặc khởi tạo thất bại | Xem `ps -a`, log `mysql`, `app-db-setup`, `migrate`; kiểm tra secrets khớp DB |
 | Chrome báo chứng chỉ chưa tin cậy | Kiểm tra chứng chỉ tự ký, hostname, thời hạn; cấu hình trust hoặc chứng chỉ phù hợp trên máy triển khai |
-| Thiếu metrics hoặc log | Kiểm tra Prometheus Targets, datasource Grafana, log exporter/Alloy/Loki và khoảng thời gian truy vấn |
+| Thiếu metrics hoặc log | Kiểm tra Prometheus Targets, datasource Grafana, log exporter/Promtail/Alloy/Loki và khoảng thời gian truy vấn |

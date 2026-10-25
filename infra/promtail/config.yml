@@ -1,0 +1,34 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+positions:
+  filename: /tmp/positions.yml
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+scrape_configs:
+  - job_name: nginx_access
+    syslog:
+      listen_address: 0.0.0.0:1515
+      listen_protocol: udp
+      syslog_format: rfc3164
+      use_incoming_timestamp: false
+      labels:
+        service_name: nginx
+        environment: ${LOG_ENVIRONMENT}
+        kind: access
+        collector: promtail
+  - job_name: nginx_error
+    syslog:
+      listen_address: 0.0.0.0:1516
+      listen_protocol: udp
+      syslog_format: rfc3164
+      use_incoming_timestamp: false
+      labels:
+        service_name: nginx
+        environment: ${LOG_ENVIRONMENT}
+        kind: error
+        collector: promtail
+    pipeline_stages:
+      - replace:
+          expression: '\?([^\s"]+)'
+          replace: '[redacted]'

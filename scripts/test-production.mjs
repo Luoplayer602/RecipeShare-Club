@@ -99,7 +99,7 @@ try{
   const prom=`http://localhost:${config.PROMETHEUS_PORT||9090}`
   for(let attempt=0;attempt<30;attempt++){
     const targets=(await (await fetch(prom+'/api/v1/targets')).json()).data.activeTargets
-    if(['prometheus','nginx','recipeshare','grafana','loki','alloy','mysql','containers'].every(job=>targets.some(target=>target.labels.job===job&&target.health==='up'))){
+    if(['prometheus','nginx','recipeshare','grafana','loki','alloy','promtail','mysql','containers'].every(job=>targets.some(target=>target.labels.job===job&&target.health==='up'))){
       assert.ok(targets.some(target=>target.labels.job==='recipeshare'&&target.scrapeUrl==='http://app:3000/api/metrics'));break
     }
     if(attempt===29)throw Error('Production scrape targets did not all become healthy')
@@ -119,7 +119,7 @@ try{
   assert.ok(logged,'Missing production Nginx/Next.js correlated logs')
   await request('/api/auth/logout','POST')
   await request('/api/auth/me','GET',undefined,401)
-  console.log('PASS: all eight production scrape targets, app scraping inside Compose, correlated Loki logs and logout invalidation.')
+  console.log('PASS: all nine production scrape targets, app scraping inside Compose, correlated Loki logs and logout invalidation.')
 }finally{
   // Only remove this run's isolated account/content from the explicitly isolated DB.
   const db=await mysql.createConnection({host:'127.0.0.1',port:Number(config.MYSQL_PORT||3307),database:config.MYSQL_DATABASE||'recipeshare',user:'recipe_app',password:fs.readFileSync(new URL('../.secrets/mysql_app_password.txt',import.meta.url),'utf8')})

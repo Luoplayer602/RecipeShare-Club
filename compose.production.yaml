@@ -98,6 +98,14 @@ services:
     volumes:
       - ./infra/prometheus/production.yml:/etc/prometheus/prometheus.yml:ro
 
+  alloy:
+    environment:
+      LOG_ENVIRONMENT: production
+
+  promtail:
+    environment:
+      LOG_ENVIRONMENT: production
+
 volumes:
   app_uploads:
 

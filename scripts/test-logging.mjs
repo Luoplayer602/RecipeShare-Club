@@ -28,7 +28,7 @@ assert.ok(board.dashboard.panels.some(panel=>panel.type==='logs'))
 const marker='private-query-'+randomUUID()
 const started=Date.now()-1000
 // Feed the actual Nginx error listener without interrupting the application.
-execFileSync('docker',['compose','exec','-T','alloy','/bin/bash'],{
+execFileSync('docker',['compose','exec','-T','promtail','/bin/bash'],{
   input:`printf '%s' '<132>Oct 24 12:00:00 local nginx: synthetic-observability-error request="GET /safe?token=${marker} HTTP/1.1"' > /dev/udp/127.0.0.1/1516\n`,
   cwd:new URL('..',import.meta.url),stdio:['pipe','pipe','pipe'],
 })
@@ -61,7 +61,7 @@ assert.doesNotMatch(all.map(row=>row.line).join('\n'),new RegExp(marker))
 assert.ok(all.some(row=>row.labels.kind==='error'&&row.line.includes('[redacted]')))
 // Query responses may include detected_level structured metadata; check the index itself.
 const indexed=await get('/api/datasources/proxy/uid/recipeshare-loki/loki/api/v1/labels')
-assert.deepEqual(indexed.data.filter(key=>!['service_name','environment','kind'].includes(key)),[],'Unexpected indexed labels')
+assert.deepEqual(indexed.data.filter(key=>!['service_name','environment','kind','collector'].includes(key)),[],'Unexpected indexed labels')
 const api=JSON.parse(all.find(row=>row.labels.service_name==='nextjs'&&row.line.includes(requestId)).line)
 assert.equal(api.route,'/api/health/db');assert.equal(api.status,200)
 const failed=JSON.parse(all.find(row=>row.line.includes(failureId)).line)

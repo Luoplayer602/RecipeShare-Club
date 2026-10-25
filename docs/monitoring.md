@@ -1,6 +1,6 @@
 # Prometheus và Grafana
 
-Next.js vẫn chạy trên Windows cổng 3000. Compose chạy Nginx, exporter, Prometheus và Grafana; MySQL/phpMyAdmin giữ cách chạy cũ. Loki + Alloy đã được bổ sung; xem [thu gom và truy vấn log](logging.md).
+Các lệnh bên dưới mô tả cấu hình nền. Với toàn bộ ứng dụng chạy Docker, dùng [hướng dẫn production](docker-production.md) và file env tương ứng. Loki nhận log Nginx từ Promtail và log Next.js từ Alloy; xem [thu gom và truy vấn log](logging.md).
 
 ## Khởi chạy
 
@@ -37,7 +37,7 @@ Dashboard hiển thị:
 - Trạng thái scrape Next.js và trạng thái Nginx.
 - Request API mỗi giây, mã trả về, tỉ lệ 5xx và p95 thời gian handler.
 - Request/kết nối Nginx; CPU và bộ nhớ tiến trình Next.js.
-- Dashboard metrics ban đầu hiển thị bốn target Prometheus, Nginx exporter, Next.js, Grafana. Prometheus hiện scrape thêm Loki, Alloy, MySQL và container metrics; xem `up` trong Explore để thấy cả tám target.
+- Dashboard metrics ban đầu hiển thị bốn target Prometheus, Nginx exporter, Next.js, Grafana. Prometheus hiện scrape thêm Loki, Alloy, Promtail, MySQL và container metrics; xem `up` trong Explore để thấy cả chín target.
 
 ## Hiểu đúng các số liệu
 
@@ -67,7 +67,7 @@ docker compose exec prometheus promtool check config /etc/prometheus/prometheus.
 docker compose exec -w /etc/prometheus prometheus promtool test rules alerts.test.yml
 ```
 
-Script monitoring chỉ tạo traffic đọc/không có phiên; không tạo tài khoản hay bài viết. Kiểm tra token bảo vệ, tám target healthy, route label cố định, provisioning và truy vấn thật từ datasource Grafana.
+Script monitoring chỉ tạo traffic đọc/không có phiên; không tạo tài khoản hay bài viết. Kiểm tra token bảo vệ, chín target healthy, route label cố định, provisioning và truy vấn thật từ datasource Grafana. Với production, `scripts/test-parallel-logging.mjs <file-env>` kiểm tra hai collector cùng chín target mà không sửa nội dung.
 
 Từ `app/`:
 

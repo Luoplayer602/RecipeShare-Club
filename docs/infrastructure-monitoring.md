@@ -13,14 +13,14 @@ docker compose up -d --wait
 docker compose restart nginx
 ```
 
-Sau đó chạy Next.js từ `app/` bằng `pnpm.cmd dev --hostname 0.0.0.0 --port 3000` như trước. Restart Nginx sau khi tạo lại Alloy để cập nhật địa chỉ syslog, theo [hướng dẫn log](logging.md).
+Sau đó chạy Next.js từ `app/` bằng `pnpm.cmd dev --hostname 0.0.0.0 --port 3000` như trước. Với full Docker, dùng [hướng dẫn production](docker-production.md). Restart Nginx sau khi tạo lại Promtail để cập nhật địa chỉ syslog, theo [hướng dẫn log](logging.md).
 
 - Dashboard mới: http://localhost:3002/d/recipeshare-infrastructure
 - Dashboard web/API: http://localhost:3002/d/recipeshare-overview
 - Prometheus targets: http://localhost:9090/targets
 - Prometheus alerts: http://localhost:9090/alerts
 
-Đăng nhập Grafana bằng tài khoản cũ. Datasource/dashboard tự provision. Có tám scrape target: `prometheus`, `nginx`, `recipeshare`, `grafana`, `loki`, `alloy`, `mysql`, `containers`.
+Đăng nhập Grafana bằng tài khoản cũ. Datasource/dashboard tự provision. Có chín scrape target: `prometheus`, `nginx`, `recipeshare`, `grafana`, `loki`, `alloy`, `promtail`, `mysql`, `containers`.
 
 Script khởi tạo tạo hai file local bị Git bỏ qua: `.secrets/mysql_monitor_password.txt` và `.secrets/mysqld_exporter.cnf`. Không sửa hoặc chia sẻ nội dung các file này. Chạy lại script giữ secret đã có; nếu hai file không khớp, script dừng để đồng bộ tại máy.
 

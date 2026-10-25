@@ -2,42 +2,13 @@ logging {
   level = "info"
 }
 
-// Separate listeners prevent host-supplied labels from becoming service labels.
+// Only application syslog is collected here; Nginx goes exclusively to Promtail.
 loki.source.syslog "nextjs" {
   listener {
     address = "0.0.0.0:1514"
     protocol = "udp"
     syslog_format = "rfc5424"
-    labels = { service_name = "nextjs", environment = "development" }
-  }
-  forward_to = [loki.write.local.receiver]
-}
-
-loki.source.syslog "nginx_access" {
-  listener {
-    address = "0.0.0.0:1515"
-    protocol = "udp"
-    syslog_format = "rfc3164"
-    labels = { service_name = "nginx", environment = "development", kind = "access" }
-  }
-  forward_to = [loki.write.local.receiver]
-}
-
-loki.source.syslog "nginx_error" {
-  listener {
-    address = "0.0.0.0:1516"
-    protocol = "udp"
-    syslog_format = "rfc3164"
-    labels = { service_name = "nginx", environment = "development", kind = "error" }
-  }
-  forward_to = [loki.process.nginx_error.receiver]
-}
-
-loki.process "nginx_error" {
-  // Native Nginx errors may contain a request URL; remove its query string.
-  stage.replace {
-    expression = "\\?([^\\s\\\"]+)"
-    replace = "[redacted]"
+    labels = { service_name = "nextjs", environment = sys.env("LOG_ENVIRONMENT"), collector = "alloy" }
   }
   forward_to = [loki.write.local.receiver]
 }
